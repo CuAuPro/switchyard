@@ -1,0 +1,32 @@
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Logs & diagnostics
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Node installs and build outputs
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Local environment overrides
+.env
+.env.*
+!.env.example
+!backend/.env.host.example
+!backend/.env.docker.example
+
+# Prisma local databases
+backend/dev.db
+
+# Tooling caches
+.turbo/
+.nx/
+.parcel-cache/
+.eslintcache
+.angular/cache

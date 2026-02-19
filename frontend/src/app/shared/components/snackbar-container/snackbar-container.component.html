@@ -1,0 +1,17 @@
+@if (snackbars().length > 0) {
+  <div class="snackbar-container">
+    @for (snack of snackbars(); track snack.id) {
+      <div class="snackbar" [ngClass]="snack.variant">
+        <div class="content">
+          <strong>{{ snack.title }}</strong>
+          @if (snack.detail) {
+            <p>{{ snack.detail }}</p>
+          }
+        </div>
+        <button type="button" (click)="dismiss(snack.id)" aria-label="Dismiss notification">
+          &times;
+        </button>
+      </div>
+    }
+  </div>
+}

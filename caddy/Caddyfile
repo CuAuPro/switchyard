@@ -1,0 +1,10 @@
+# Base Caddyfile placeholder.
+# Backend updates routing via the Admin API; this file just bootstraps the admin endpoint.
+{
+	admin {$CADDY_ADMIN}
+	auto_https off
+}
+
+:80 {
+	respond "Switchyard router is managing routes via Admin API." 200
+}

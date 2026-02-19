@@ -1,0 +1,38 @@
+<div class="login-shell">
+  <section class="brand-panel">
+    <div class="glow"></div>
+    <h1>Switchyard</h1>
+    <p>Blue/green routing made predictable.</p>
+    <ul>
+      <li>Visualize staging and prod health</li>
+      <li>Trigger Docker image rollouts with a click</li>
+      <li>Promote staging to prod safely</li>
+    </ul>
+  </section>
+
+  <form class="login-card" [formGroup]="loginForm" (ngSubmit)="submit()">
+    <header>
+      <h2>Welcome back</h2>
+      <p>Authenticate to continue orchestration.</p>
+    </header>
+
+    <label>
+      <span>Email</span>
+      <input formControlName="email" type="email" placeholder="admin@switchyard.dev" />
+    </label>
+
+    <label>
+      <span>Password</span>
+      <input formControlName="password" type="password" placeholder="••••••••" />
+    </label>
+
+    <button type="submit" [disabled]="loginForm.invalid || loading">
+      <span *ngIf="!loading">Sign in</span>
+      <span *ngIf="loading">Signing in…</span>
+    </button>
+
+    <p class="hint">Seed user: <strong>admin&#64;switchyard.dev</strong> / <strong>Switchyard!123</strong></p>
+
+    <div class="error" *ngIf="error">{{ error }}</div>
+  </form>
+</div>

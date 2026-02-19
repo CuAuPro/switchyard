@@ -1,0 +1,31 @@
+# Dependencies & builds
+/node_modules
+/dist
+/coverage
+/build
+
+# Local databases & Prisma artifacts
+/dev.db
+/dev.db-journal
+/prisma/migrations/**/README.md
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs & temp files
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+/.tmp
+
+# Generated assets
+/openapi/swagger.json
+/openapi/swagger.yaml
+
+# Misc
+*.tsbuildinfo
+.idea/
+.vscode/

@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  viewer
+  operator
+  admin
+}
+
+enum DeploymentStatus {
+  pending
+  deploying
+  healthy
+  failing
+  rolled_back
+}
+
+enum EnvironmentStatus {
+  unknown
+  healthy
+  degraded
+  unhealthy
+  draining
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(viewer)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deployments  Deployment[]
+}
+
+model Service {
+  id              String               @id @default(cuid())
+  name            String               @unique
+  description     String?
+  repositoryUrl   String?
+  activeTrafficId String?              @unique
+  healthEndpoint  String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  environments    ServiceEnvironment[]
+  deployments     Deployment[]
+  switchEvents    SwitchEvent[]
+  activities      ActivityEvent[]
+}
+
+model ServiceEnvironment {
+  id             String             @id @default(cuid())
+  service        Service            @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  serviceId      String
+  label          String
+  targetUrl      String
+  dockerImage    String?
+  weightPercent  Int                @default(100)
+  isActive       Boolean            @default(false)
+  status         EnvironmentStatus  @default(unknown)
+  lastCheckAt    DateTime?
+  lastLatencyMs  Int?
+  metadata       Json?
+  deployments    Deployment[]
+  activityEvents ActivityEvent[]
+
+  @@unique([serviceId, label])
+}
+
+model Deployment {
+  id             String             @id @default(cuid())
+  service        Service            @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  serviceId      String
+  environment    ServiceEnvironment? @relation(fields: [environmentId], references: [id], onDelete: SetNull)
+  environmentId  String?
+  version        String
+  artifactUrl    String?
+  dockerImage    String?
+  status         DeploymentStatus   @default(pending)
+  initiatedBy    User?              @relation(fields: [initiatedById], references: [id], onDelete: SetNull)
+  initiatedById  String?
+  metadata       Json?
+  createdAt      DateTime           @default(now())
+  completedAt    DateTime?
+}
+
+model SwitchEvent {
+  id            String   @id @default(cuid())
+  service       Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  serviceId     String
+  fromLabel     String?
+  toLabel       String
+  reason        String?
+  initiatedBy   String?
+  createdAt     DateTime @default(now())
+}
+
+model ActivityEvent {
+  id            String              @id @default(cuid())
+  service       Service             @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  serviceId     String
+  environment   ServiceEnvironment? @relation(fields: [environmentId], references: [id], onDelete: SetNull)
+  environmentId String?
+  actorId       String?
+  actorRole     Role?
+  type          String
+  message       String
+  metadata      Json?
+  createdAt     DateTime            @default(now())
+}

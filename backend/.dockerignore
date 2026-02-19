@@ -1,0 +1,17 @@
+# Reduce Docker build context
+node_modules
+dist
+coverage
+.git
+.github
+.gitignore
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.env
+.env.*
+!.env.example
+Dockerfile.*
+/dev.db
+README.md
+**/*.tsbuildinfo

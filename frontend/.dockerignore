@@ -1,0 +1,16 @@
+# Keep Docker context lean
+node_modules
+dist
+coverage
+.angular/cache
+.git
+.github
+.gitignore
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+README.md

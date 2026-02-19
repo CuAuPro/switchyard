@@ -1,0 +1,53 @@
+
+services:
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env.docker
+    volumes:
+      - ./backend/dev.db:/app/dev.db
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "${BACKEND_PORT:-4201}:4201"
+    networks:
+      - switchyard-net
+
+  frontend:
+    build:
+      context: ./frontend
+    env_file:
+      - ./frontend/.env
+    ports:
+      - "${FRONTEND_PORT:-4200}:80"
+    depends_on:
+      - backend
+    networks:
+      - switchyard-net
+
+  caddy:
+    image: caddy:2.8-alpine
+    command:
+      - caddy
+      - run
+      - --resume
+      - --config
+      - /etc/caddy/Caddyfile
+      - --adapter
+      - caddyfile
+    environment:
+      CADDY_ADMIN: "0.0.0.0:2019"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy/config:/config
+      - ./caddy/data:/data
+    ports:
+      - "8080:80"
+      - "8443:443"
+      - "2019:2019"
+    networks:
+      - switchyard-net
+
+networks:
+  switchyard-net:
+    name: switchyard-net

@@ -1,0 +1,21 @@
+# Dependencies
+/node_modules
+
+# Builds
+/dist
+/coverage
+/build
+
+# Environment and logs
+.env
+.env.*
+!.env.example
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Misc
+*.tsbuildinfo
+.DS_Store
+Thumbs.db

@@ -1,0 +1,256 @@
+<div class="dashboard">
+  <header class="top-nav">
+    <div class="brand">
+      <span class="eyebrow">Switchyard Command Deck</span>
+      <h1>Blue/Green Traffic Orchestrator</h1>
+      <p>Controlled rollouts, health-aware routing, and operator-grade visibility.</p>
+    </div>
+    <div class="actions">
+      <span>{{ auth.name() || 'anonymous' }} · {{ auth.role() }}</span>
+      <button type="button" (click)="logout()">Logout</button>
+    </div>
+  </header>
+
+  <section class="content">
+    <div class="loading-state" *ngIf="loading()">
+      <p>Loading service...</p>
+    </div>
+
+    @if (!loading()) {
+      @if (error()) {
+        <div class="error">{{ error() }}</div>
+      }
+
+      <section class="realtime-panel">
+        <div class="realtime-chip" [class.open]="wsStatus() === 'open'" [class.error]="wsStatus() === 'error'">
+          Control link: {{ wsStatus() | titlecase }}
+        </div>
+        <span *ngIf="wsStatusMessage()">{{ wsStatusMessage() }}</span>
+      </section>
+
+      @if (services().length === 0) {
+        <section class="empty-state">
+          <div>
+            <h2>Register your first service</h2>
+            <p>
+              Build the sample workload once:
+              <code>docker build -t switchyard-sample ./sample-app</code>.
+              Provide the image tag and internal <code>APP_PORT</code>. Switchyard will reserve host ports for staging/prod
+              automatically and configure Caddy routing.
+            </p>
+          </div>
+          <form class="create-service-form" [formGroup]="createServiceForm" (ngSubmit)="registerService()">
+            <label>
+              Service name
+              <input formControlName="name" placeholder="sample-api" />
+            </label>
+            <label>
+              Description
+              <input formControlName="description" placeholder="Optional summary" />
+            </label>
+            <label>
+              Repository URL
+              <input formControlName="repositoryUrl" placeholder="https://github.com/org/repo" />
+            </label>
+            <label>
+              Docker image
+              <input formControlName="dockerImage" placeholder="switchyard-sample:latest" />
+            </label>
+            <label>
+              APP_PORT inside the container
+              <input type="number" formControlName="appPort" />
+            </label>
+            <label>
+              Health endpoint (optional)
+              <input formControlName="healthEndpoint" placeholder="/healthz or https://app/health" />
+            </label>
+            <button type="submit" [disabled]="createServiceForm.invalid || creating()">
+              {{ creating() ? 'Registering...' : 'Create service' }}
+            </button>
+        </form>
+        </section>
+      } @else {
+        @for (service of services(); track trackById($index, service)) {
+          <article class="service-card">
+            <header class="service-head">
+              <div>
+                <h2>{{ service.name }}</h2>
+                <p>{{ service.description || 'No description provided.' }}</p>
+              </div>
+              <div class="env-pills">
+                @for (env of service.environments; track env.id) {
+                  <span class="env-pill" [class.active]="env.isActive">
+                    <strong>{{ env.label }}</strong>
+                    <span
+                      class="status-chip"
+                      [ngClass]="[statusClass(env.status), isEnvPulsing(env.id) ? 'health-pulse' : '']"
+                    >
+                      {{ statusLabel(env.status) }}
+                    </span>
+                  </span>
+                }
+              </div>
+            </header>
+
+            <section class="service-toolbar" *ngIf="isOperator()">
+              <div>
+                <p class="hint">Stop both staging and prod slots to edit metadata.</p>
+              </div>
+              <div class="toolbar-actions">
+                <button
+                  type="button"
+                  (click)="openMetadataModal(service.id)"
+                  [title]="serviceEditTooltip(service)"
+                >
+                  Edit metadata
+                </button>
+                <button
+                  type="button"
+                  class="ghost danger"
+                  (click)="deleteService(service)"
+                  [disabled]="deleting()"
+                >
+                  {{ deleting() ? 'Removing…' : 'Delete service' }}
+                </button>
+              </div>
+            </section>
+
+            <div class="env-grid">
+              @for (env of service.environments; track env.id) {
+                <section class="env-card" [class.active]="env.isActive">
+                  <header class="env-head">
+                    <div>
+                      <h4>{{ env.label }}</h4>
+                      <span class="state-chip" [class.running]="env.containerState === 'running'">
+                        {{ env.containerState === 'running' ? 'Container running' : 'Container stopped' }}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      class="ghost"
+                      (click)="switchTraffic(service, env.label)"
+                      [disabled]="!isOperator() || env.isActive || !canRouteTraffic(env)"
+                      [title]="routeTooltip(env)"
+                    >
+                      @if (env.isActive) {
+                        Active slot
+                      } @else {
+                        Route traffic here
+                      }
+                    </button>
+                  </header>
+
+                  <dl class="env-meta">
+                    <div>
+                      <dt>Host port</dt>
+                      <dd>{{ env.hostPort ?? '—' }}</dd>
+                    </div>
+                    <div>
+                      <dt>App port</dt>
+                      <dd>{{ env.appPort ?? '—' }}</dd>
+                    </div>
+                    <div>
+                      <dt>Target URL</dt>
+                      <dd>{{ env.targetUrl }}</dd>
+                    </div>
+                    <div>
+                      <dt>Docker image</dt>
+                      <dd>{{ env.dockerImage || 'not set' }}</dd>
+                    </div>
+                  </dl>
+
+                  <div class="env-actions" *ngIf="isOperator()">
+                    <button
+                      type="button"
+                      (click)="startEnvironment(service, env)"
+                      [disabled]="!canStart(env) || isEnvToggling(env.id) || !isOperator()"
+                      [title]="startTooltip(env)"
+                    >
+                      {{ isEnvToggling(env.id) && canStart(env) ? 'Starting…' : 'Start' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="ghost"
+                      (click)="stopEnvironment(service, env)"
+                      [disabled]="!canStop(env) || isEnvToggling(env.id) || !isOperator()"
+                      [title]="stopTooltip(env)"
+                    >
+                      {{ isEnvToggling(env.id) && canStop(env) ? 'Stopping…' : 'Stop' }}
+                    </button>
+                  </div>
+
+                  <form
+                    class="env-config"
+                    [formGroup]="envForms.get(env.id)!"
+                    (ngSubmit)="updateEnvironment(service, env)"
+                  >
+                    <label>
+                      Docker image
+                      <input formControlName="dockerImage" [readonly]="!isOperator()" />
+                    </label>
+                    <label>
+                      APP_PORT (inside container)
+                      <input type="number" formControlName="appPort" [readonly]="!canEdit(env) || !isOperator()" />
+                    </label>
+                    <button
+                      type="submit"
+                      [disabled]="
+                        !isOperator() || !canEdit(env) || envForms.get(env.id)?.invalid || isEnvSaving(env.id)
+                      "
+                    >
+                      {{
+                        isEnvSaving(env.id)
+                          ? 'Saving…'
+                          : canEdit(env)
+                            ? 'Save config'
+                            : 'Stop to edit'
+                      }}
+                    </button>
+                  </form>
+                </section>
+              }
+            </div>
+
+            <div class="deployments">
+              <header>
+                <h4>Activity log</h4>
+                <button type="button" class="ghost" (click)="toggleActivity(service.id)">
+                  {{ isActivityCollapsed(service.id) ? 'Expand' : 'Collapse' }}
+                </button>
+              </header>
+              @if (!isActivityCollapsed(service.id)) {
+                <div class="log-list">
+                  @for (activity of service.activities; track activity.id) {
+                    <div class="log">
+                      <div class="log-row">
+                        <div>
+                          <span class="version">{{ activity.message }}</span>
+                          <span class="slot-chip">{{ activitySlotLabel(activity) }}</span>
+                        </div>
+                        <small>{{ activityActorLabel(activity) }} · {{ activity.createdAt | date: 'short' }}</small>
+                      </div>
+                    </div>
+                  } @empty {
+                    <p class="empty">No activity yet.</p>
+                  }
+                </div>
+              }
+            </div>
+
+            @if (isMetadataModalOpen(service.id)) {
+              <app-service-metadata-modal
+                [open]="true"
+                [form]="serviceForms.get(service.id)!"
+                [service]="service"
+                [saving]="detailsSaving()"
+                [canEdit]="canEditService(service)"
+                (closed)="closeMetadataModal()"
+                (submitted)="saveServiceDetails(service)"
+              />
+            }
+          </article>
+        }
+      }
+    }
+  </section>
+</div>

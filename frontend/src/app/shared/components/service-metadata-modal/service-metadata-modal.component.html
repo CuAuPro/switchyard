@@ -1,0 +1,33 @@
+@if (open) {
+  <div class="metadata-modal-backdrop" (click)="close()">
+    <section class="metadata-modal" (click)="$event.stopPropagation()">
+      <header>
+        <div>
+          <p class="eyebrow">Metadata</p>
+          <h2>{{ title }}</h2>
+          <p class="hint">Description, repo URL, and health endpoint feed the Switchyard dashboard.</p>
+        </div>
+        <button type="button" class="ghost" (click)="close()">Close</button>
+      </header>
+
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <label>
+          Description
+          <input formControlName="description" placeholder="Description shown in dashboard" />
+        </label>
+        <label>
+          Repository URL
+          <input formControlName="repositoryUrl" placeholder="https://github.com/org/service" />
+        </label>
+        <label>
+          Health endpoint
+          <input formControlName="healthEndpoint" placeholder="/healthz or https://url/healthz" />
+        </label>
+        <footer>
+          <button type="button" class="ghost" (click)="close()">Cancel</button>
+          <button type="submit" [disabled]="submitDisabled">{{ submitLabel }}</button>
+        </footer>
+      </form>
+    </section>
+  </div>
+}

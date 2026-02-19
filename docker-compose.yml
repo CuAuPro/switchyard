@@ -1,0 +1,56 @@
+
+services:
+  backend:
+    image: ${BACKEND_IMAGE:-switchyard-backend:latest}
+    volumes:
+      - ./backend/dev.db:/app/dev.db
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      PORT: 4201
+      DATABASE_URL: ${DATABASE_URL:-file:./dev.db}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      ROUTER_DOMAIN: ${ROUTER_DOMAIN:-switchyard.localhost}
+      ROUTER_CONSOLE_SUBDOMAIN: ${ROUTER_CONSOLE_SUBDOMAIN:-console}
+      CONSOLE_TARGET_ORIGIN: ${CONSOLE_TARGET_ORIGIN:-http://frontend:80}
+      CADDY_ADMIN_URL: ${CADDY_ADMIN_URL:-http://caddy:2019}
+      ROUTER_TARGET_HOST: ${ROUTER_TARGET_HOST:-http://backend:4000}
+      DOCKER_NETWORK: ${DOCKER_NETWORK:-switchyard-net}
+    networks:
+      - switchyard-net
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-switchyard-frontend:latest}
+    environment:
+      SWITCHYARD_API_BASE: ${FRONTEND_API_BASE:-}
+      SWITCHYARD_WS_BASE: ${FRONTEND_WS_BASE:-}
+    depends_on:
+      - backend
+    networks:
+      - switchyard-net
+
+  caddy:
+    image: caddy:2.8-alpine
+    command:
+      - caddy
+      - run
+      - --resume
+      - --config
+      - /etc/caddy/Caddyfile
+      - --adapter
+      - caddyfile
+    environment:
+      CADDY_ADMIN: "0.0.0.0:2019"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy/config:/config
+      - ./caddy/data:/data
+    ports:
+      - "9000:80" # Disable in production.
+      - "443:443"
+      - "2019:2019"
+    networks:
+      - switchyard-net
+
+networks:
+  switchyard-net:
+    name: switchyard-net
