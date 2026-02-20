@@ -36,7 +36,7 @@ function Invoke-Compose {
 }
 
 Write-Host "▶ Running Prisma migrations inside backend container"
-Invoke-Compose run --rm backend npx prisma migrate deploy
+Invoke-Compose run --rm backend pnpm exec prisma migrate deploy
 
 Write-Host "▶ Seeding admin user (idempotent)"
 Invoke-Compose run --rm backend node dist/utils/seed.js

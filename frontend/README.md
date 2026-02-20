@@ -9,18 +9,18 @@ Angular 21 standalone dashboard that visualizes a single staging/prod service, s
 ## Getting Started
 ```bash
 cd frontend
-npm install
-npm start   # ng serve
+pnpm install
+pnpm start   # ng serve
 ```
 Visit `http://localhost:4200`. Local builds talk directly to `http://localhost:4201` for REST and `ws://localhost:4201/ws` for realtime updates with no extra proxy config.
 
-## NPM Scripts
+## PNPM Scripts
 | Script | Description |
 | --- | --- |
-| `npm start` | Angular dev server. |
-| `npm test` | Karma + Jasmine unit tests (`ng test`). |
-| `npm run build` | Production build via Angular CLI. |
-| `npm run watch` | Builds in watch/development configuration. |
+| `pnpm start` | Angular dev server. |
+| `pnpm test` | Karma + Jasmine unit tests (`ng test`). |
+| `pnpm run build` | Production build via Angular CLI. |
+| `pnpm run watch` | Builds in watch/development configuration. |
 
 ## Directory Highlights
 - `src/app/core/models` - TypeScript interfaces representing backend entities. Update when API schema changes.
@@ -30,10 +30,10 @@ Visit `http://localhost:4200`. Local builds talk directly to `http://localhost:4
 - `src/app/pages/login` - Sign-in form pointing to `/auth/login` (external HTML template + hero panel).
 
 ## Responding to Backend Schema Changes
-1. Regenerate the backend spec: `cd backend && npm run swagger:generate`.
-2. Refresh the generated Angular client: `cd frontend && npm run swagger:generate`.
+1. Regenerate the backend spec: `cd backend && pnpm run swagger:generate`.
+2. Refresh the generated Angular client: `cd frontend && pnpm run swagger:generate`.
 3. Update local models/components only if the new responses diverge from what the UI expects.
-4. Re-run `npm test -- --watch=false` and `npm run build`.
+4. Re-run `pnpm test -- --watch=false` and `pnpm run build`.
 
 ## Deployment UX Expectations
 - Operators deploy Docker images to the staging slot (form only captures `dockerImage`; the backend logs `STARTING DOCKER IMAGE: ...`). During service creation you can also pass optional repository and health endpoint values so the backend starts monitoring immediately.
@@ -44,7 +44,7 @@ Visit `http://localhost:4200`. Local builds talk directly to `http://localhost:4
 - Switch buttons call `/services/:id/switch` so prod follows staging once validated.
 
 ## Testing & Builds
-- `npm test -- --watch=false` - run unit specs headlessly.
-- `npm run build` - verify production compilation (Angular CLI 21).
+- `pnpm test -- --watch=false` - run unit specs headlessly.
+- `pnpm run build` - verify production compilation (Angular CLI 21).
 
 

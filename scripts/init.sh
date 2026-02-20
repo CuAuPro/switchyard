@@ -17,7 +17,7 @@ compose() {
 }
 
 echo "▶ Running Prisma migrations inside backend container"
-compose run --rm backend npx prisma migrate deploy
+compose run --rm backend pnpm exec prisma migrate deploy
 
 echo "▶ Seeding admin user (idempotent)"
 compose run --rm backend node dist/utils/seed.js

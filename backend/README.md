@@ -1,4 +1,4 @@
-﻿# Switchyard Backend
+# Switchyard Backend
 
 TypeScript/Express API that orchestrates staging -> prod deployments, persists state via Prisma, streams events over WebSockets, and regenerates the Caddy router on demand.
 
@@ -9,7 +9,7 @@ TypeScript/Express API that orchestrates staging -> prod deployments, persists s
 
 ### Database Options
 - **Default dev**: SQLite (`DATABASE_URL="file:./dev.db"`) - no Docker required.
-- **Postgres**: set `DATABASE_URL="postgresql://user:pass@host:5432/db?schema=public"` and update `datasource db { provider = "postgresql" }` inside `prisma/schema.prisma`. After switching, rerun `npx prisma migrate deploy` and `npm run prisma:generate`.
+- **Postgres**: set `DATABASE_URL="postgresql://user:pass@host:5432/db?schema=public"` and update `datasource db { provider = "postgresql" }` inside `prisma/schema.prisma`. After switching, rerun `pnpm exec prisma migrate deploy` and `pnpm run prisma:generate`.
 - The backend automatically selects the correct Prisma driver adapter (better-sqlite3 vs. pg) based on `DATABASE_URL`.
 - Prisma CLI reads connection strings from `prisma.config.ts`, so updating `.env` is enough for both runtime and migrations.
 
@@ -38,38 +38,38 @@ cp .env.docker.example .env.docker
 ### Install & run
 ```bash
 cd backend
-npm install
-npx prisma migrate dev --name init   # or pull existing migrations
-npm run seed
-npm run dev          # tsx watch src/server.ts (ESM)
+pnpm install
+pnpm exec prisma migrate dev --name init   # or pull existing migrations
+pnpm run seed
+pnpm run dev          # tsx watch src/server.ts (ESM)
 ```
 API runs at `http://localhost:4201`, WebSockets at `/ws`, Swagger UI at `/docs`. The server always listens on port `4201`; expose/remap it via Docker or reverse proxies if you need a different public port.
 
-## NPM Scripts
+## PNPM Scripts
 | Script | Description |
 | --- | --- |
-| `npm run clean` / `clean:all` | Remove `dist` (and optionally `node_modules`). |
-| `npm run dev` | Run `tsx watch src/server.ts`. |
-| `npm run build` | Compile with `tsconfig.build.json` (no maps/declarations). |
-| `npm run typecheck` | Execute `tsc --noEmit`. |
-| `npm run lint` / `lint:fix` | ESLint flat config + Prettier. |
-| `npm run format` / `format:check` | Prettier 3 formatting. |
-| `npm run test` / `test:watch` | Jest (ts-jest ESM). |
-| `npm run prisma:generate` | `prisma generate`. |
-| `npm run prisma:migrate` | `prisma migrate dev`. |
-| `npm run swagger:generate` | Produce `openapi/swagger.(json|yaml)`. |
-| `npm run caddyfile` | Push a freshly generated config to the running Caddy admin API. |
-| `npm run seed` | Seed admin user + sample service. |
+| `pnpm run clean` / `clean:all` | Remove `dist` (and optionally `node_modules`). |
+| `pnpm run dev` | Run `tsx watch src/server.ts`. |
+| `pnpm run build` | Compile with `tsconfig.build.json` (no maps/declarations). |
+| `pnpm run typecheck` | Execute `tsc --noEmit`. |
+| `pnpm run lint` / `lint:fix` | ESLint flat config + Prettier. |
+| `pnpm run format` / `format:check` | Prettier 3 formatting. |
+| `pnpm run test` / `test:watch` | Jest (ts-jest ESM). |
+| `pnpm run prisma:generate` | `prisma generate`. |
+| `pnpm run prisma:migrate` | `prisma migrate dev`. |
+| `pnpm run swagger:generate` | Produce `openapi/swagger.(json|yaml)`. |
+| `pnpm run caddyfile` | Push a freshly generated config to the running Caddy admin API. |
+| `pnpm run seed` | Seed admin user + sample service. |
 
 ## Schema Changes (Prisma)
 1. Edit `prisma/schema.prisma`.
-2. Run `npx prisma migrate dev --name <change>` to create/apply a migration.
-3. Run `npm run prisma:generate` so `@prisma/client` picks up the update.
+2. Run `pnpm exec prisma migrate dev --name <change>` to create/apply a migration.
+3. Run `pnpm run prisma:generate` so `@prisma/client` picks up the update.
 4. Update services that touch the new fields (e.g., `src/services/serviceRegistry.ts`).
 
 ## API Contracts & Swagger
 - Request/response schemas live in `src/utils/validators.ts` (Zod). Keep these aligned with the Prisma models.
-- OpenAPI wiring is in `src/openapi/*`. After editing validators, run `npm run swagger:generate` to refresh `/docs` and `openapi/swagger.yaml`.
+- OpenAPI wiring is in `src/openapi/*`. After editing validators, run `pnpm run swagger:generate` to refresh `/docs` and `openapi/swagger.yaml`.
 - Auth endpoints:
   - `POST /api/auth/login` – returns `{ token, role, name }`.
   - `GET /api/auth/me` – requires `Authorization: Bearer <token>` and returns the authenticated user profile. Frontend calls this on load to restore the dashboard session.
@@ -99,7 +99,7 @@ API runs at `http://localhost:4201`, WebSockets at `/ws`, Swagger UI at `/docs`.
 - `src/lib/caddyfile.ts` emits router configs for both staging and prod subdomains:
   - `staging.<service>.switchyard.localhost` -> staging slot
   - `<service>.switchyard.localhost` -> active prod slot
-- Service registration, deployment switches, and the CLI script all call the generator. Run `npm run caddyfile` manually after seeding if you need a fresh file.
+- Service registration, deployment switches, and the CLI script all call the generator. Run `pnpm run caddyfile` manually after seeding if you need a fresh file.
 - Configs are delivered exclusively via the Caddy admin API (`POST /load?adapter=caddyfile`). Set `CADDY_ADMIN_URL` to the admin endpoint inside your compose network (e.g., `http://caddy:2019`). Mount `/etc/caddy` from the container if you want to keep a host-side view of whatever Caddy is currently running.
 
 ## Deployment Workflow Guidelines

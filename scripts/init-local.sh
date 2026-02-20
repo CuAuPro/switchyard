@@ -34,27 +34,27 @@ fi
 
 echo "🛠 Installing backend dependencies"
 cd "$ROOT/backend"
-npm install
+pnpm install
 
 echo "🗃 Applying Prisma migrations"
-if ! npx prisma migrate deploy; then
+if ! pnpm exec prisma migrate deploy; then
   echo "ℹ️ migrate deploy failed (likely first run), falling back to migrate dev"
-  npx prisma migrate dev --name init
+  pnpm exec prisma migrate dev --name init
 fi
 
 echo "🌱 Seeding database"
-npm run seed
+pnpm run seed
 
 echo "🌐 Pushing router config via Caddy admin API"
-npm run caddyfile
+pnpm run caddyfile
 
 echo "🛠 Installing frontend dependencies"
 cd "$ROOT/frontend"
-npm install
+pnpm install
 
 echo "🛠 Installing sample app dependencies"
 cd "$ROOT/sample-app"
-npm install
+pnpm install
 
 if command -v docker >/dev/null 2>&1; then
   echo "🧪 Building sample app image (switchyard-sample:latest)"

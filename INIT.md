@@ -9,10 +9,10 @@ cd scripts
 ```
 
 This script performs:
-1. `npm install` inside `backend/`, `frontend/`, and `sample-app/`.
-2. `npx prisma migrate deploy` (falls back to `migrate dev` on first run).
-3. `npm run seed` to create the admin user.
-4. `npm run caddyfile` to emit the latest Caddyfile preview and push it via the admin API if configured.
+1. `pnpm install` inside `backend/`, `frontend/`, and `sample-app/`.
+2. `pnpm exec prisma migrate deploy` (falls back to `migrate dev` on first run).
+3. `pnpm run seed` to create the admin user.
+4. `pnpm run caddyfile` to emit the latest Caddyfile preview and push it via the admin API if configured.
 5. `docker build -t switchyard-sample ./sample-app` (if Docker CLI is detected) so the backend can launch sample containers automatically.
 
 Once it finishes (intended for local development), start the whole stack:

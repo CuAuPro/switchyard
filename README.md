@@ -22,7 +22,7 @@ Use Docker only—no need to install Node or build the sample workload.
    - `ROUTER_DOMAIN` – default `switchyard.localhost` works for local testing because `*.localhost` resolves to `127.0.0.1`.
    - `CONSOLE_TARGET_ORIGIN` – leave as `http://frontend:80` unless you change the frontend container.
 
-2. **Prime the database/router using containers (no npm install required)**
+2. **Prime the database/router using containers (no pnpm install required)**
    ```bash
    ./scripts/init.sh
    ```
@@ -47,7 +47,7 @@ That’s it—you can now register a service (Docker image + container `APP_PORT
 - `staging.<service>.switchyard.localhost` → staging slot
 - `<service>.switchyard.localhost` → whichever slot is active
 
-Need to refresh the router or DB later? Re-run `docker compose exec backend npm run caddyfile` or `npm run seed` inside the backend container as required.
+Need to refresh the router or DB later? Re-run `docker compose exec backend pnpm run caddyfile` or `pnpm run seed` inside the backend container as required.
 
 ## Local Development Bootstrap
 If you plan to hack on the repo (compile TypeScript, run Jest, etc.), use the helper script that now lives at `scripts/init-local.sh`:
@@ -60,7 +60,7 @@ cd scripts
 It handles everything the compose stack doesn’t:
 1. Installs dependencies in `backend/`, `frontend/`, and `sample-app/`.
 2. Applies Prisma migrations (deploy → dev fallback) and seeds the admin user.
-3. Runs `npm run caddyfile` for preview/testing.
+3. Runs `pnpm run caddyfile` for preview/testing.
 4. Builds the sample workload (`switchyard-sample:latest`) when Docker CLI is present so autostarted containers have an image to run.
 5. Ensures the `switchyard-net` Docker network exists for local Docker workflows.
 
