@@ -1,4 +1,5 @@
-import { EnvironmentStatus, Prisma } from '@prisma/client';
+import prismaPkg from '@prisma/client';
+import type { EnvironmentStatus as EnvironmentStatusType, Prisma } from '@prisma/client';
 import fetch from 'node-fetch';
 
 import { env as config } from '../config/env.js';
@@ -7,6 +8,7 @@ import { prisma } from '../lib/prisma.js';
 import { recordHealth, switchEnvironment } from '../services/serviceRegistry.js';
 
 const SYSTEM_ACTOR = { id: 'system', role: 'admin' as const };
+const { EnvironmentStatus } = prismaPkg;
 
 const normalizeHealthPath = (healthEndpoint?: string | null) => {
   if (!healthEndpoint) return null;
@@ -60,7 +62,7 @@ const checkEnvironment = async (
   }
 
   let lastLatency: number | undefined;
-  let lastStatus: EnvironmentStatus | null = null;
+  let lastStatus: EnvironmentStatusType | null = null;
 
   for (const url of urls) {
     const start = Date.now();

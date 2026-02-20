@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import fetch from 'node-fetch';
 
 import { env } from '../config/env.js';

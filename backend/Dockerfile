@@ -8,15 +8,13 @@ RUN pnpm install --frozen-lockfile
 COPY tsconfig*.json ./
 COPY src ./src
 RUN pnpm run build
-
-FROM build AS prod-deps
-RUN pnpm --filter . deploy --prod --legacy /prod
+RUN pnpm prune --prod --ignore-scripts
 
 FROM node:22-alpine
 WORKDIR /app
 RUN apk add --no-cache docker-cli
 COPY --from=build /app/package.json ./
-COPY --from=prod-deps /prod/node_modules ./node_modules
+COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY prisma ./prisma
 COPY prisma.config.ts ./prisma.config.ts

@@ -1,8 +1,8 @@
-import {
+import prismaPkg from '@prisma/client';
+import type {
   ActivityEvent,
   Deployment as DeploymentModel,
-  DeploymentStatus,
-  EnvironmentStatus,
+  EnvironmentStatus as EnvironmentStatusType,
   Prisma,
   Role,
   Service as ServiceModel,
@@ -24,6 +24,8 @@ import { findAvailablePort, isPortAvailable } from '../lib/ports.js';
 import { prisma } from '../lib/prisma.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { eventBus } from '../utils/eventBus.js';
+
+const { DeploymentStatus, EnvironmentStatus } = prismaPkg;
 type ServiceInput = {
   name: string;
   description?: string;
@@ -115,7 +117,7 @@ const logActivity = async ({ serviceId, environmentId, actor, type, message, met
         actorRole: actor?.role,
         type,
         message,
-        metadata: metadata ? (metadata as Prisma.JsonObject) : Prisma.DbNull,
+        metadata: metadata ? (metadata as Prisma.JsonObject) : prismaPkg.Prisma.DbNull,
       },
     });
   } catch (error) {
@@ -605,7 +607,7 @@ export const deployVersion = async (input: DeploymentInput, actor: ActorUser) =>
     throw new HttpError(400, 'Deployments may only target the staging slot');
   }
 
-  const metadataValue = input.metadata ? (input.metadata as Prisma.JsonObject) : Prisma.DbNull;
+  const metadataValue = input.metadata ? (input.metadata as Prisma.JsonObject) : prismaPkg.Prisma.DbNull;
 
   await prisma.deployment.create({
     data: {
@@ -798,7 +800,7 @@ export const switchEnvironment = async (input: SwitchInput, actor: ActorUser) =>
   return serializeService(updated);
 };
 
-export const recordHealth = async (environmentId: string, status: EnvironmentStatus, latencyMs?: number) => {
+export const recordHealth = async (environmentId: string, status: EnvironmentStatusType, latencyMs?: number) => {
   const environment = await prisma.serviceEnvironment.update({
     where: { id: environmentId },
     data: { status, lastLatencyMs: latencyMs ?? null, lastCheckAt: new Date() },

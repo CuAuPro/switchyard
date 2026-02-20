@@ -1,4 +1,4 @@
-import { Service, ServiceEnvironment } from '@prisma/client';
+import type { Service, ServiceEnvironment } from '@prisma/client';
 
 export type DeploymentEvent =
   | {
