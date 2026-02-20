@@ -1,0 +1,8 @@
+ignoredBuiltDependencies:
+  - '@prisma/engines'
+  - '@scarf/scarf'
+  - better-sqlite3
+  - core-js
+  - esbuild
+  - prisma
+  - unrs-resolver

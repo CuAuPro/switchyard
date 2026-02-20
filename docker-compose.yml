@@ -45,7 +45,7 @@ services:
       - ./caddy/config:/config
       - ./caddy/data:/data
     ports:
-      - "9000:80" # Disable in production.
+      - "80:80" # Disable in production.
       - "443:443"
       - "2019:2019"
     networks:

@@ -33,6 +33,23 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "@prisma/engines",
+      "prisma"
+    ],
+    "ignoredBuiltDependencies": [
+      "@prisma/engines",
+      "@scarf/scarf",
+      "better-sqlite3",
+      "core-js",
+      "esbuild",
+      "fsevents",
+      "prisma",
+      "unrs-resolver"
+    ]
+  },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^8.4.1",
     "@prisma/adapter-better-sqlite3": "^7.4.0",
@@ -64,6 +81,7 @@
     "@types/swagger-ui-express": "^4.1.8",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.18.1",
+    "@prisma/config": "^7.4.1",
     "@typescript-eslint/eslint-plugin": "^8.56.0",
     "@typescript-eslint/parser": "^8.56.0",
     "cpx": "^1.2.1",

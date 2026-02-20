@@ -13,6 +13,8 @@
 .env
 .env.*
 !.env.example
+!.env.host.example
+!.env.docker.example
 
 # Logs & temp files
 *.log
