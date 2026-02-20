@@ -91,7 +91,7 @@ export const buildCaddyfileContents = async () => {
 
   if (consoleSubdomain && consoleTarget) {
     const consoleHost = `${consoleSubdomain}.${routerDomain}`;
-    const consoleApiTarget = `${env.routerTargetHost}:4201`;
+    const consoleApiTarget = env.dockerNetwork ? 'http://backend:4201' : `${env.routerTargetHost}:4201`;
     const consoleBlock = `{
   encode gzip
   @api path /api/* /ws
