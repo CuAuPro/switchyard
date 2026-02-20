@@ -33,8 +33,7 @@
           <div>
             <h2>Register your first service</h2>
             <p>
-              Build the sample workload once:
-              <code>docker build -t switchyard-sample ./sample-app</code>.
+              Use the prebuilt sample image: <code>cuaupro/switchyard-sample:latest</code> (no local build required).
               Provide the image tag and internal <code>APP_PORT</code>. Switchyard will reserve host ports for staging/prod
               automatically and configure Caddy routing.
             </p>
@@ -54,7 +53,7 @@
             </label>
             <label>
               Docker image
-              <input formControlName="dockerImage" placeholder="switchyard-sample:latest" />
+              <input formControlName="dockerImage" placeholder="cuaupro/switchyard-sample:latest" />
             </label>
             <label>
               APP_PORT inside the container

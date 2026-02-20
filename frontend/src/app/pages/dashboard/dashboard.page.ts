@@ -61,7 +61,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
       name: ['', [Validators.required, Validators.minLength(2)]],
       description: [''],
       repositoryUrl: [''],
-      dockerImage: ['switchyard-sample:latest', [Validators.required, Validators.minLength(3)]],
+      dockerImage: ['cuaupro/switchyard-sample:latest', [Validators.required, Validators.minLength(3)]],
       appPort: [4000, [Validators.required, Validators.min(1), Validators.max(65535)]],
       healthEndpoint: [''],
     });
@@ -149,7 +149,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
             name: '',
             description: '',
             repositoryUrl: '',
-            dockerImage: 'switchyard-sample:latest',
+            dockerImage: 'cuaupro/switchyard-sample:latest',
             appPort: 4000,
             healthEndpoint: '',
           });
