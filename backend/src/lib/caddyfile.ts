@@ -13,8 +13,11 @@ const resolveProxyTarget = (environment: {
   metadata: Prisma.JsonValue | null;
 }) => {
   const meta = parseEnvironmentMetadata(environment.metadata);
-  if (meta.containerName && meta.appPort) {
+  if (env.dockerNetwork && meta.containerName && meta.appPort) {
     return `http://${meta.containerName}:${meta.appPort}`;
+  }
+  if (!env.dockerNetwork && meta.hostPort) {
+    return `${env.routerTargetHost}:${meta.hostPort}`;
   }
   return environment.targetUrl;
 };
@@ -88,11 +91,12 @@ export const buildCaddyfileContents = async () => {
 
   if (consoleSubdomain && consoleTarget) {
     const consoleHost = `${consoleSubdomain}.${routerDomain}`;
+    const consoleApiTarget = `${env.routerTargetHost}:4201`;
     const consoleBlock = `{
   encode gzip
   @api path /api/* /ws
   handle @api {
-    reverse_proxy backend:4201
+    reverse_proxy ${consoleApiTarget}
   }
   handle {
     reverse_proxy ${consoleTarget}

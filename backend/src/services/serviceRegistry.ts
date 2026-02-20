@@ -187,7 +187,7 @@ const routerHost = envConfig.routerTargetHost.replace(/\/$/, '');
 
 const buildTargetUrl = (hostPort: number, metadata: Prisma.JsonValue | null) => {
   const meta = parseMetadata(metadata);
-  if (meta.containerName && meta.appPort) {
+  if (envConfig.dockerNetwork && meta.containerName && meta.appPort) {
     return `http://${meta.containerName}:${meta.appPort}`;
   }
   return `${routerHost}:${hostPort}`;
