@@ -140,6 +140,8 @@ const safeRegenerateCaddy = async (context: string) => {
 };
 
 const sanitizeName = (value: string) => value.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+const SLOT_A_LABEL = 'slot-a';
+const SLOT_B_LABEL = 'slot-b';
 
 const buildContainerName = (serviceName: string, label: string) =>
   `switchyard-${sanitizeName(serviceName)}-${sanitizeName(label)}`;
@@ -317,12 +319,12 @@ const requireAllStopped = (service: { environments: { metadata: Prisma.JsonValue
 
 const normalizeEnvs = (input: ServiceInput) => {
   const envMap = new Map(input.environments.map((env) => [env.label.toLowerCase(), env]));
-  const staging = envMap.get('staging');
-  const prod = envMap.get('prod');
-  if (!staging || !prod) {
-    throw new HttpError(400, "Service must include 'staging' and 'prod' environments");
+  const slotA = envMap.get(SLOT_A_LABEL);
+  const slotB = envMap.get(SLOT_B_LABEL);
+  if (!slotA || !slotB) {
+    throw new HttpError(400, "Service must include both 'slot-a' and 'slot-b' environments");
   }
-  return { staging, prod };
+  return { slotA, slotB };
 };
 
 const provisionDocker = async (serviceName: string, environments: ServiceEnvironment[]) => {
@@ -383,22 +385,22 @@ const reloadServiceOrThrow = async (serviceId: string) => {
 export const registerService = async (input: ServiceInput, actor: ActorUser) => {
   requireRole(actor.role, ['admin', 'operator']);
 
-  const { staging, prod } = normalizeEnvs(input);
+  const { slotA, slotB } = normalizeEnvs(input);
   const existing = await prisma.service.findFirst({ include: { environments: true } });
 
   if (!existing) {
     const usedPorts = new Set<number>();
-    const stagingRecord = await buildEnvRecord({
+    const slotARecord = await buildEnvRecord({
       serviceName: input.name,
-      label: 'staging',
-      input: staging,
+      label: SLOT_A_LABEL,
+      input: slotA,
       usedPorts,
       isActive: false,
     });
-    const prodRecord = await buildEnvRecord({
+    const slotBRecord = await buildEnvRecord({
       serviceName: input.name,
-      label: 'prod',
-      input: prod,
+      label: SLOT_B_LABEL,
+      input: slotB,
       usedPorts,
       isActive: true,
     });
@@ -409,7 +411,7 @@ export const registerService = async (input: ServiceInput, actor: ActorUser) => 
         description: input.description,
         repositoryUrl: input.repositoryUrl,
         healthEndpoint: input.healthEndpoint,
-        environments: { create: [stagingRecord, prodRecord] },
+        environments: { create: [slotARecord, slotBRecord] },
         activeTrafficId: undefined,
       },
       include: serviceInclude,
@@ -423,37 +425,42 @@ export const registerService = async (input: ServiceInput, actor: ActorUser) => 
   }
 
   const usedPorts = new Set<number>();
-  const [stagingEnv, prodEnv] = existing.environments;
+  const slotAEnv = existing.environments.find((env) => env.label === SLOT_A_LABEL);
+  const slotBEnv = existing.environments.find((env) => env.label === SLOT_B_LABEL);
+  if (!slotAEnv || !slotBEnv) {
+    throw new HttpError(400, "Existing service must include both 'slot-a' and 'slot-b' environments");
+  }
 
-  const stagingRecord = await buildEnvRecord({
+  const slotARecord = await buildEnvRecord({
     serviceName: existing.name,
-    label: 'staging',
-    input: staging,
-    existing: stagingEnv,
+    label: SLOT_A_LABEL,
+    input: slotA,
+    existing: slotAEnv,
     usedPorts,
-    isActive: stagingEnv?.isActive ?? false,
+    isActive: slotAEnv.isActive,
   });
-  const prodRecord = await buildEnvRecord({
+  const slotBRecord = await buildEnvRecord({
     serviceName: existing.name,
-    label: 'prod',
-    input: prod,
-    existing: prodEnv,
+    label: SLOT_B_LABEL,
+    input: slotB,
+    existing: slotBEnv,
     usedPorts,
-    isActive: true,
+    isActive: slotBEnv.isActive,
   });
+  const activeTrafficId = slotARecord.isActive ? slotAEnv.id : slotBRecord.isActive ? slotBEnv.id : slotBEnv.id;
 
   await prisma.$transaction([
     prisma.serviceEnvironment.update({
-      where: { id: stagingEnv.id },
-      data: stagingRecord,
+      where: { id: slotAEnv.id },
+      data: slotARecord,
     }),
     prisma.serviceEnvironment.update({
-      where: { id: prodEnv.id },
-      data: prodRecord,
+      where: { id: slotBEnv.id },
+      data: slotBRecord,
     }),
     prisma.service.update({
       where: { id: existing.id },
-      data: { activeTrafficId: prodEnv.id },
+      data: { activeTrafficId },
     }),
   ]);
 
@@ -603,8 +610,8 @@ export const deployVersion = async (input: DeploymentInput, actor: ActorUser) =>
 
   const environment = service.environments.find((env) => env.label === input.environmentLabel);
   if (!environment) throw new HttpError(404, 'Environment not found');
-  if (environment.label !== 'staging') {
-    throw new HttpError(400, 'Deployments may only target the staging slot');
+  if (environment.isActive) {
+    throw new HttpError(400, 'Deployments may only target the non-active slot');
   }
 
   const metadataValue = input.metadata ? (input.metadata as Prisma.JsonObject) : prismaPkg.Prisma.DbNull;

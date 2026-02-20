@@ -7,6 +7,8 @@ import { prisma } from './prisma.js';
 
 const sanitizeHost = (name: string) => name.toLowerCase().replace(/[^a-z0-9-]/g, '-');
 const ensureDomain = (value: string) => value.replace(/^\./, '') || 'switchyard.localhost';
+const SLOT_A_LABEL = 'slot-a';
+const SLOT_B_LABEL = 'slot-b';
 
 const resolveProxyTarget = (environment: {
   targetUrl: string;
@@ -70,22 +72,30 @@ export const buildCaddyfileContents = async () => {
   };
 
   for (const service of services) {
-    const staging = service.environments.find((env) => env.label === 'staging');
-    const activeProdTargets = service.environments.filter((env) => env.isActive);
-    const prodFallback =
-      activeProdTargets.length > 0
-        ? activeProdTargets
-        : service.environments.filter((env) => env.label === 'prod');
+    const slotA = service.environments.find((env) => env.label === SLOT_A_LABEL);
+    const slotB = service.environments.find((env) => env.label === SLOT_B_LABEL);
+    const activeTargets = service.environments.filter((env) => env.isActive);
+    const liveTarget = activeTargets[0] ?? slotB ?? slotA;
+    const standbyTarget = service.environments.find((env) => !env.isActive) ?? (liveTarget?.id === slotA?.id ? slotB : slotA);
 
-    if (staging) {
-      const stagingHost = buildHostname(service.name, 'staging');
-      blocks.push(buildHostBlock(stagingHost, staging));
+    if (slotA) {
+      const slotAHost = buildHostname(service.name, SLOT_A_LABEL);
+      blocks.push(buildHostBlock(slotAHost, slotA));
     }
 
-    if (prodFallback.length > 0) {
-      const prodHost = buildHostname(service.name);
-      const target = prodFallback[0];
-      blocks.push(buildHostBlock(prodHost, target));
+    if (slotB) {
+      const slotBHost = buildHostname(service.name, SLOT_B_LABEL);
+      blocks.push(buildHostBlock(slotBHost, slotB));
+    }
+
+    if (liveTarget) {
+      const liveHost = buildHostname(service.name);
+      blocks.push(buildHostBlock(liveHost, liveTarget));
+    }
+
+    if (standbyTarget) {
+      const stagingHost = buildHostname(service.name, 'staging');
+      blocks.push(buildHostBlock(stagingHost, standbyTarget));
     }
   }
 

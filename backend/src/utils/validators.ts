@@ -33,22 +33,22 @@ export const createServiceSchema = registry.register(
         )
         .superRefine((envs, ctx) => {
           const labels = envs.map((env) => env.label.toLowerCase());
-          if (!labels.includes('staging') || !labels.includes('prod')) {
+          if (!labels.includes('slot-a') || !labels.includes('slot-b')) {
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
-              message: "Services must define both 'staging' and 'prod' environments",
+              message: "Services must define both 'slot-a' and 'slot-b' environments",
             });
           }
         }),
     })
     .openapi({
-      description: 'Payload for registering a new service with staging/prod environments.',
+      description: 'Payload for registering a new service with slot-a/slot-b environments.',
       example: {
         name: 'billing-api',
         description: 'Handles invoices',
         environments: [
-          { label: 'staging', dockerImage: 'switchyard-sample:latest', appPort: 4000, weightPercent: 0 },
-          { label: 'prod', dockerImage: 'switchyard-sample:latest', appPort: 4000, weightPercent: 100 },
+          { label: 'slot-a', dockerImage: 'switchyard-sample:latest', appPort: 4000, weightPercent: 0 },
+          { label: 'slot-b', dockerImage: 'switchyard-sample:latest', appPort: 4000, weightPercent: 100 },
         ],
       },
     }),
@@ -75,7 +75,7 @@ export const updateServiceSchema = registry.register(
       description: 'Partial update for existing service metadata or environment configuration.',
       example: {
         description: 'Updated summary',
-        environments: [{ label: 'staging', appPort: 4100 }],
+        environments: [{ label: 'slot-a', appPort: 4100 }],
       },
     }),
 );
@@ -91,7 +91,7 @@ export const deploySchema = registry.register(
     })
     .openapi({
       description: 'Starts a deployment on a specific environment.',
-      example: { environmentLabel: 'staging', version: '2.1.0', dockerImage: 'ghcr.io/acme/api:2.1.0' },
+      example: { environmentLabel: 'slot-a', version: '2.1.0', dockerImage: 'ghcr.io/acme/api:2.1.0' },
     }),
 );
 
@@ -104,7 +104,7 @@ export const switchSchema = registry.register(
     })
     .openapi({
       description: 'Switches active traffic to a specific environment.',
-      example: { toLabel: 'green', reason: 'post-validation cutover' },
+      example: { toLabel: 'slot-b', reason: 'post-validation cutover' },
     }),
 );
 

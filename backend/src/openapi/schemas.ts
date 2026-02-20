@@ -79,7 +79,7 @@ export const ServiceActivitySchema = registry.register(
       example: {
         id: 'act_123',
         type: 'service.switched',
-        message: 'Routed traffic to prod',
+        message: 'Routed traffic to slot-b',
         createdAt: '2026-02-17T18:21:00.000Z',
       },
     }),
@@ -106,16 +106,16 @@ export const ServiceSchema = registry.register(
         environments: [
           {
             id: 'env1',
-            label: 'staging',
-            targetUrl: 'http://sample-staging:4001',
+            label: 'slot-a',
+            targetUrl: 'http://sample-slot-a:4001',
             status: 'healthy',
             weightPercent: 0,
             isActive: false,
           },
           {
             id: 'env2',
-            label: 'prod',
-            targetUrl: 'http://sample-prod:4002',
+            label: 'slot-b',
+            targetUrl: 'http://sample-slot-b:4002',
             status: 'healthy',
             weightPercent: 100,
             isActive: true,

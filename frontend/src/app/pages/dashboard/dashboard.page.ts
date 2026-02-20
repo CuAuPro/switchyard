@@ -128,8 +128,8 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
       name,
       description: description?.trim() || undefined,
       environments: [
-        { label: 'staging', dockerImage, appPort: appPortNum, weightPercent: 0 },
-        { label: 'prod', dockerImage, appPort: appPortNum, weightPercent: 100 },
+        { label: 'slot-a', dockerImage, appPort: appPortNum, weightPercent: 0 },
+        { label: 'slot-b', dockerImage, appPort: appPortNum, weightPercent: 100 },
       ],
     };
     const repoTrimmed = repositoryUrl?.trim();
@@ -252,7 +252,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   deleteService(service: Service) {
     if (!this.isOperator()) return;
     const confirmed = window.confirm(
-      `Delete ${service.name}? This stops and removes both staging/prod containers.`,
+      `Delete ${service.name}? This stops and removes both slot-a/slot-b containers.`,
     );
     if (!confirmed) return;
     this.deleting.set(true);
@@ -295,6 +295,25 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
 
   statusClass(status: EnvironmentStatus) {
     return this.statusStyles[status]?.className ?? 'status-unknown';
+  }
+
+  slotName(env: ServiceEnvironment) {
+    if (env.label === 'slot-a') return 'Slot A';
+    if (env.label === 'slot-b') return 'Slot B';
+    return `Slot ${env.label}`;
+  }
+
+  slotRole(env: ServiceEnvironment) {
+    return env.isActive ? 'PROD' : 'STAGING';
+  }
+
+  orderedEnvironments(service: Service) {
+    const rank = (label: string) => {
+      if (label === 'slot-a') return 0; // Slot A
+      if (label === 'slot-b') return 1; // Slot B
+      return 2;
+    };
+    return [...service.environments].sort((a, b) => rank(a.label) - rank(b.label));
   }
 
   canEdit(env: ServiceEnvironment) {
@@ -340,7 +359,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
 
   serviceEditTooltip(service: Service) {
     if (this.canEditService(service)) return '';
-    return 'Stop both staging and prod to edit metadata';
+    return 'Stop both slots to edit metadata';
   }
 
   isEnvSaving(envId: string) {
@@ -353,12 +372,38 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
 
 
   activitySlotLabel(activity: ServiceActivity) {
-    if (activity.environmentLabel) return `${activity.environmentLabel} slot`;
-    return 'service';
+    if (!activity.environmentLabel) return 'service';
+    if (activity.environmentLabel === 'slot-a') return 'Slot A';
+    if (activity.environmentLabel === 'slot-b') return 'Slot B';
+    return `Slot ${activity.environmentLabel}`;
   }
 
   activityActorLabel(activity: ServiceActivity) {
     return activity.actorRole ?? 'system';
+  }
+
+  routeHost(service: Service, env: ServiceEnvironment) {
+    const domain = this.routerDomain();
+    const serviceName = this.slugify(service.name);
+    if (env.isActive) {
+      return `${serviceName}.${domain}`;
+    }
+    if (env.label === 'slot-a' || env.label === 'slot-b') {
+      return `staging.${serviceName}.${domain}`;
+    }
+    return `${serviceName}.${domain}`;
+  }
+
+  routeUrl(service: Service, env: ServiceEnvironment) {
+    const port = this.routerPort();
+    const portSuffix = port ? `:${port}` : '';
+    return `http://${this.routeHost(service, env)}${portSuffix}`;
+  }
+
+  routeLabel(service: Service, env: ServiceEnvironment) {
+    const port = this.routerPort();
+    const portSuffix = port ? `:${port}` : '';
+    return `${this.routeHost(service, env)}${portSuffix}`;
   }
 
   toggleActivity(serviceId: string) {
@@ -595,6 +640,29 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
       default:
         return null;
     }
+  }
+
+  private routerDomain() {
+    const hostname = window.location.hostname;
+    if (hostname.startsWith('console.')) {
+      return hostname.slice('console.'.length);
+    }
+    return hostname;
+  }
+
+  private routerPort() {
+    const { hostname, port } = window.location;
+    if (port && port !== '80' && port !== '443' && port !== '4200') {
+      return port;
+    }
+    if ((hostname === 'localhost' || hostname.endsWith('.localhost')) && port === '4200') {
+      return '8080';
+    }
+    return '';
+  }
+
+  private slugify(value: string) {
+    return value.toLowerCase().replace(/[^a-z0-9-]/g, '-');
   }
 
 }

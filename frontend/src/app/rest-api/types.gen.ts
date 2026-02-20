@@ -60,7 +60,7 @@ export type Service = {
 export type ServicesResponse = Array<Service>;
 
 /**
- * Payload for registering a new service with staging/prod environments.
+ * Payload for registering a new service with slot-a/slot-b environments.
  */
 export type CreateServiceRequest = {
     name: string;

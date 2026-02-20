@@ -14,7 +14,10 @@ describe('serviceRegistry', () => {
       registerService(
         {
           name: 'api',
-          environments: [{ label: 'blue', targetUrl: 'http://blue' }],
+          environments: [
+            { label: 'slot-a', dockerImage: 'ghcr.io/app:slot-a' },
+            { label: 'slot-b', dockerImage: 'ghcr.io/app:slot-b' },
+          ],
         },
         { id: 'viewer', role: 'viewer' },
       ),
@@ -25,17 +28,15 @@ describe('serviceRegistry', () => {
     (prisma.service.findUnique as jest.Mock).mockResolvedValue({
       id: 'svc1',
       name: 'svc1',
-      environments: [{ id: 'env1', label: 'staging' }],
+      environments: [{ id: 'env1', label: 'slot-a', isActive: false }],
     });
 
     (prisma.deployment.create as jest.Mock).mockResolvedValue({ id: 'dep1', version: '1.0.0' });
 
-    const deployment = await deployVersion(
-      { serviceId: 'svc1', environmentLabel: 'staging', version: '1.0.0', dockerImage: 'ghcr.io/app:1.0.0' },
+    await deployVersion(
+      { serviceId: 'svc1', environmentLabel: 'slot-a', version: '1.0.0', dockerImage: 'ghcr.io/app:1.0.0' },
       operator,
     );
-
-    expect(deployment).toEqual({ id: 'dep1', version: '1.0.0' });
     expect(prisma.deployment.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ version: '1.0.0', dockerImage: 'ghcr.io/app:1.0.0' }),

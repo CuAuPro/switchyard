@@ -34,7 +34,7 @@
             <h2>Register your first service</h2>
             <p>
               Use the prebuilt sample image: <code>cuaupro/switchyard-sample:latest</code> (no local build required).
-              Provide the image tag and internal <code>APP_PORT</code>. Switchyard will reserve host ports for staging/prod
+              Provide the image tag and internal <code>APP_PORT</code>. Switchyard will reserve host ports for slot-a/slot-b
               automatically and configure Caddy routing.
             </p>
           </div>
@@ -77,9 +77,12 @@
                 <p>{{ service.description || 'No description provided.' }}</p>
               </div>
               <div class="env-pills">
-                @for (env of service.environments; track env.id) {
+                @for (env of orderedEnvironments(service); track env.id) {
                   <span class="env-pill" [class.active]="env.isActive">
-                    <strong>{{ env.label }}</strong>
+                    <strong>{{ slotName(env) }}</strong>
+                    <span class="role-badge" [class.prod]="env.isActive" [class.staging]="!env.isActive">
+                      {{ slotRole(env) }}
+                    </span>
                     <span
                       class="status-chip"
                       [ngClass]="[statusClass(env.status), isEnvPulsing(env.id) ? 'health-pulse' : '']"
@@ -93,7 +96,7 @@
 
             <section class="service-toolbar" *ngIf="isOperator()">
               <div>
-                <p class="hint">Stop both staging and prod slots to edit metadata.</p>
+                <p class="hint">Stop both slots to edit metadata.</p>
               </div>
               <div class="toolbar-actions">
                 <button
@@ -115,11 +118,14 @@
             </section>
 
             <div class="env-grid">
-              @for (env of service.environments; track env.id) {
+              @for (env of orderedEnvironments(service); track env.id) {
                 <section class="env-card" [class.active]="env.isActive">
                   <header class="env-head">
                     <div>
-                      <h4>{{ env.label }}</h4>
+                      <h4>{{ slotName(env) }}</h4>
+                      <span class="role-badge" [class.prod]="env.isActive" [class.staging]="!env.isActive">
+                        {{ slotRole(env) }}
+                      </span>
                       <span class="state-chip" [class.running]="env.containerState === 'running'">
                         {{ env.containerState === 'running' ? 'Container running' : 'Container stopped' }}
                       </span>
@@ -150,7 +156,12 @@
                     </div>
                     <div>
                       <dt>Target URL</dt>
-                      <dd>{{ env.targetUrl }}</dd>
+                      <dd>
+                        <a [href]="routeUrl(service, env)" target="_blank" rel="noopener noreferrer">
+                          {{ routeLabel(service, env) }}
+                        </a>
+                        <small>{{ env.targetUrl }}</small>
+                      </dd>
                     </div>
                     <div>
                       <dt>Docker image</dt>

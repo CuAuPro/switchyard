@@ -1,6 +1,6 @@
 # Switchyard
 
-Switchyard is a reference blue/green deployment control plane: a Node.js API with Angular console, Prisma/Postgres persistence, Docker-based app orchestration, and Caddy-managed routing (staging + prod hostnames).
+Switchyard is a reference blue/green deployment control plane: a Node.js API with Angular console, Prisma/Postgres persistence, Docker-based app orchestration, and Caddy-managed routing (`slot-a` + `slot-b` hostnames).
 
 ![Switchyard Dashboard](images/user-interface.jpeg)
 
@@ -43,8 +43,9 @@ Use Docker only—no need to install Node or build the sample workload.
    - API: `http://localhost:4201`.
    - Default admin user (created by migrations/seed): `admin@switchyard.dev / Switchyard!123`.
 
-That’s it—you can now register a service (Docker image + container `APP_PORT`), deploy to staging, and switch prod traffic between the two slots. Caddy automatically exposes:
-- `staging.<service>.switchyard.localhost` → staging slot
+That’s it—you can now register a service (Docker image + container `APP_PORT`), deploy to either slot, and switch active traffic between them. Caddy automatically exposes:
+- `slot-a.<service>.switchyard.localhost` → Slot A
+- `slot-b.<service>.switchyard.localhost` → Slot B
 - `<service>.switchyard.localhost` → whichever slot is active
 
 Need to refresh the router or DB later? Re-run `docker compose exec backend pnpm run caddyfile` or `pnpm run seed` inside the backend container as required.

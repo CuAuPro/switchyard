@@ -1,5 +1,3 @@
-import { afterAll, jest } from '@jest/globals';
-
 jest.mock('../lib/prisma', () => {
   const deployments: unknown[] = [];
   return {
@@ -24,6 +22,9 @@ jest.mock('../lib/prisma', () => {
       switchEvent: {
         create: jest.fn(),
       },
+      activityEvent: {
+        create: jest.fn(),
+      },
       user: {
         findUnique: jest.fn(),
       },
@@ -32,6 +33,10 @@ jest.mock('../lib/prisma', () => {
     disconnectPrisma: jest.fn(),
   };
 });
+
+jest.mock('../lib/caddyfile', () => ({
+  regenerateCaddyfile: jest.fn(async () => 'mocked'),
+}));
 
 afterAll(async () => {
   const { disconnectPrisma } = await import('../lib/prisma');

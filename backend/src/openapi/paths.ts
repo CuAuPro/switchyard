@@ -39,7 +39,7 @@ const EnvironmentLabelParamSchema = registry.register(
   'EnvironmentLabelParam',
   z.object({
     serviceId: z.string().openapi({ example: 'svc_123' }),
-    label: z.string().openapi({ example: 'staging' }),
+    label: z.string().openapi({ example: 'slot-a' }),
   }),
 );
 

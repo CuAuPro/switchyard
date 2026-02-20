@@ -1,6 +1,6 @@
 # Switchyard Frontend
 
-Angular 21 standalone dashboard that visualizes a single staging/prod service, shows deployment history, and triggers deploy/switch flows against the backend API.
+Angular 21 standalone dashboard that visualizes a single `slot-a`/`slot-b` service, shows deployment history, and triggers deploy/switch flows against the backend API.
 
 ## Prerequisites
 - Node.js 20+ (Angular CLI 21)
@@ -26,7 +26,7 @@ Visit `http://localhost:4200`. Local builds talk directly to `http://localhost:4
 - `src/app/core/models` - TypeScript interfaces representing backend entities. Update when API schema changes.
 - `src/app/core/services` - Auth, API, and realtime (WebSocket) services. All REST calls (login, deployments, switches) live here.
 - `src/app/core/config/app-env.ts` - Centralized detection of API/WebSocket base URLs (maps localhost -> port 4201, otherwise same-origin).
-- `src/app/pages/dashboard` - Main UI: single service card, staging deploy form (Docker image only, version derived automatically), environment health, switch buttons, plus an empty-state wizard to register the first service by specifying a docker image and container `APP_PORT`.
+- `src/app/pages/dashboard` - Main UI: single service card, slot deployment form (Docker image only, version derived automatically), environment health, switch buttons, plus an empty-state wizard to register the first service by specifying a docker image and container `APP_PORT`.
 - `src/app/pages/login` - Sign-in form pointing to `/auth/login` (external HTML template + hero panel).
 
 ## Responding to Backend Schema Changes
@@ -36,12 +36,13 @@ Visit `http://localhost:4200`. Local builds talk directly to `http://localhost:4
 4. Re-run `pnpm test -- --watch=false` and `pnpm run build`.
 
 ## Deployment UX Expectations
-- Operators deploy Docker images to the staging slot (form only captures `dockerImage`; the backend logs `STARTING DOCKER IMAGE: ...`). During service creation you can also pass optional repository and health endpoint values so the backend starts monitoring immediately.
+- Operators deploy Docker images to the non-active slot (form only captures `dockerImage`; the backend logs `STARTING DOCKER IMAGE: ...`). During service creation you can also pass optional repository and health endpoint values so the backend starts monitoring immediately.
 - When no service exists yet, the dashboard prompts you to enter the name, docker image, and container `APP_PORT`. Switchyard selects host ports automatically, updates Caddy, and (if enabled) spins up containers for each slot.
-- When `DOCKER_AUTOSTART=true` on the backend, submitting the form triggers `docker run` for both staging/prod containers so you do not have to start them manually.
-- Staging host: `staging.<service>.switchyard.localhost`.
-- Prod host: `<service>.switchyard.localhost` (reflects whichever slot is active).
-- Switch buttons call `/services/:id/switch` so prod follows staging once validated.
+- When `DOCKER_AUTOSTART=true` on the backend, submitting the form triggers `docker run` for both slot containers so you do not have to start them manually.
+- Slot A host: `slot-a.<service>.switchyard.localhost`.
+- Slot B host: `slot-b.<service>.switchyard.localhost`.
+- Active host: `<service>.switchyard.localhost` (reflects whichever slot is active).
+- Switch buttons call `/services/:id/switch` so active traffic follows the selected slot once validated.
 
 ## Testing & Builds
 - `pnpm test -- --watch=false` - run unit specs headlessly.
