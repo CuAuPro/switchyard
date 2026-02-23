@@ -1,51 +1,73 @@
 # Switchyard Frontend
 
-Angular 21 standalone dashboard that visualizes a single `slot-a`/`slot-b` service, shows deployment history, and triggers deploy/switch flows against the backend API.
+Switchyard frontend is an Angular dashboard for operating slot-based deployments.
 
-## Prerequisites
-- Node.js 20+ (Angular CLI 21)
-- Backend API reachable on port `4201` (the client auto-points to `http://localhost:4201` / `ws://localhost:4201` whenever it detects `localhost` or `127.0.0.1`; otherwise it uses same-origin URLs so reverse proxies can handle routing).
+## Tech Stack
+- Angular 21 (standalone)
+- RxJS
+- Generated API client from backend OpenAPI spec
 
-## Getting Started
+## Responsibilities
+- Authentication and session restore
+- Service registration and metadata editing
+- Slot operations (start/stop/switch)
+- Realtime state updates via WebSocket
+- Activity and health visibility
+
+## Local Development
 ```bash
 cd frontend
 pnpm install
-pnpm start   # ng serve
+pnpm start
 ```
-Visit `http://localhost:4200`. Local builds talk directly to `http://localhost:4201` for REST and `ws://localhost:4201/ws` for realtime updates with no extra proxy config.
 
-## PNPM Scripts
-| Script | Description |
-| --- | --- |
-| `pnpm start` | Angular dev server. |
-| `pnpm test` | Karma + Jasmine unit tests (`ng test`). |
-| `pnpm run build` | Production build via Angular CLI. |
-| `pnpm run watch` | Builds in watch/development configuration. |
+App URL:
+- `http://localhost:4200`
 
-## Directory Highlights
-- `src/app/core/models` - TypeScript interfaces representing backend entities. Update when API schema changes.
-- `src/app/core/services` - Auth, API, and realtime (WebSocket) services. All REST calls (login, deployments, switches) live here.
-- `src/app/core/config/app-env.ts` - Centralized detection of API/WebSocket base URLs (maps localhost -> port 4201, otherwise same-origin).
-- `src/app/pages/dashboard` - Main UI: single service card, slot deployment form (Docker image only, version derived automatically), environment health, switch buttons, plus an empty-state wizard to register the first service by specifying a docker image and container `APP_PORT`.
-- `src/app/pages/login` - Sign-in form pointing to `/auth/login` (external HTML template + hero panel).
+## API Base Resolution
+Runtime API/WebSocket behavior:
+- on `localhost:4200` / `127.0.0.1:4200` -> uses backend at `:4201`
+- otherwise -> same-origin (`/api`, `/ws`) so Caddy/reverse proxy handles routing
 
-## Responding to Backend Schema Changes
-1. Regenerate the backend spec: `cd backend && pnpm run swagger:generate`.
-2. Refresh the generated Angular client: `cd frontend && pnpm run swagger:generate`.
-3. Update local models/components only if the new responses diverge from what the UI expects.
-4. Re-run `pnpm test -- --watch=false` and `pnpm run build`.
+This keeps local Angular dev simple while working cleanly behind `console.<domain>:<caddy-port>`.
 
-## Deployment UX Expectations
-- Operators deploy Docker images to the non-active slot (form only captures `dockerImage`; the backend logs `STARTING DOCKER IMAGE: ...`). During service creation you can also pass optional repository and health endpoint values so the backend starts monitoring immediately.
-- When no service exists yet, the dashboard prompts you to enter the name, docker image, and container `APP_PORT`. Switchyard selects host ports automatically, updates Caddy, and (if enabled) spins up containers for each slot.
-- When `DOCKER_AUTOSTART=true` on the backend, submitting the form triggers `docker run` for both slot containers so you do not have to start them manually.
-- Slot A host: `slot-a.<service>.switchyard.localhost`.
-- Slot B host: `slot-b.<service>.switchyard.localhost`.
-- Active host: `<service>.switchyard.localhost` (reflects whichever slot is active).
-- Switch buttons call `/services/:id/switch` so active traffic follows the selected slot once validated.
+## Frontend Runtime Config Reference
+The frontend can run with zero extra config in most setups. These are the runtime knobs:
 
-## Testing & Builds
-- `pnpm test -- --watch=false` - run unit specs headlessly.
-- `pnpm run build` - verify production compilation (Angular CLI 21).
+| Variable / Source | Required | Default Behavior | Description |
+| --- | --- | --- | --- |
+| Browser location (`window.location`) | Yes | used automatically | Determines whether app uses local-dev direct backend (`:4201`) or same-origin API routing. |
+| `SWITCHYARD_API_BASE` (container env) | No | empty | Compose-level override for API base if your runtime injects it into the page bootstrap config. |
+| `SWITCHYARD_WS_BASE` (container env) | No | empty | Compose-level override for WebSocket base if your runtime injects it into bootstrap config. |
+| `window.__SWITCHYARD_API_BASE__` | No | unset | Explicit browser global override for API base URL. |
+| `window.__SWITCHYARD_WS_BASE__` | No | unset | Explicit browser global override for WebSocket base URL. |
 
+Notes:
+- In Docker/Caddy mode, keep overrides empty and use same-origin routing through Caddy.
+- In pure local Angular dev (`pnpm start`), the app auto-targets `http://localhost:4201` and `ws://localhost:4201/ws`.
+- If you host frontend behind a different gateway, set API/WS overrides to that gateway origin.
 
+## Scripts
+- `pnpm start` - Angular dev server
+- `pnpm run build` - production build
+- `pnpm run watch` - build watch mode
+- `pnpm test` - Karma/Jasmine tests
+- `pnpm run swagger:generate` - regenerate typed API client
+
+## OpenAPI Client Workflow
+When backend API schemas change:
+1. `cd backend && pnpm run swagger:generate`
+2. `cd frontend && pnpm run swagger:generate`
+3. update UI code only if model shapes changed
+4. run `pnpm test -- --watch=false` and `pnpm run build`
+
+## Key Areas
+- `src/app/core/config/app-env.ts` - runtime API/WS base resolution
+- `src/app/core/services/*` - auth, API, realtime services
+- `src/app/pages/dashboard/*` - operator UI
+- `src/app/pages/login/*` - login flow
+- `src/app/rest-api/*` - generated OpenAPI client
+
+## UI Semantics
+- `Slot A` and `Slot B` are stable slot identities.
+- `PROD` / `STAGING` badges reflect traffic role (active vs non-active), not permanent environment names.

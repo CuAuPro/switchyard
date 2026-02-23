@@ -1,105 +1,105 @@
 # Switchyard
 
-Switchyard is a reference blue/green deployment control plane: a Node.js API with Angular console, Prisma/Postgres persistence, Docker-based app orchestration, and Caddy-managed routing (`slot-a` + `slot-b` hostnames).
+Switchyard is a blue/green deployment control plane for containerized services.
+It combines:
+- a backend API (Node.js + Express + Prisma)
+- a frontend console (Angular)
+- Caddy-based traffic routing across two slots (`slot-a`, `slot-b`)
 
 ![Switchyard Dashboard](images/user-interface.jpeg)
 
-## Production Quickstart (Docker Compose)
-Use Docker only—no need to install Node or build the sample workload.
+## What It Does
+- Registers one managed service with two deployment slots.
+- Starts/stops slot containers via Docker CLI.
+- Routes live traffic to the active slot.
+- Exposes a stable public host and per-slot hosts.
+- Streams runtime updates to the UI over WebSockets.
 
-1. **Create a workspace and pull the compose artifacts**
-   ```bash
-   mkdir switchyard && cd switchyard
-   curl -LO https://raw.githubusercontent.com/<your-org>/switchyard/main/docker-compose.yml
-   curl -LO https://raw.githubusercontent.com/<your-org>/switchyard/main/.env.example
-   mkdir -p scripts
-   curl -L https://raw.githubusercontent.com/<your-org>/switchyard/main/scripts/init.sh -o scripts/init.sh
-   chmod +x scripts/init.sh
-   cp .env.example .env
-   ```
-   Update `.env` once copied:
-   - `JWT_SECRET` – random string for API tokens.
-   - `ROUTER_DOMAIN` – default `switchyard.localhost` works for local testing because `*.localhost` resolves to `127.0.0.1`.
-   - `CONSOLE_TARGET_ORIGIN` – leave as `http://frontend:80` unless you change the frontend container.
+## Routing Model
+For a service named `sample-api` and domain `switchyard.localhost`:
+- `sample-api.switchyard.localhost` -> active slot
+- `slot-a.sample-api.switchyard.localhost` -> Slot A
+- `slot-b.sample-api.switchyard.localhost` -> Slot B
+- `staging.sample-api.switchyard.localhost` -> non-active slot
 
-2. **Prime the database/router using containers (no pnpm install required)**
-   ```bash
-   ./scripts/init.sh
-   ```
-   On Windows PowerShell (preinstalled), run:
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File .\scripts\init.ps1
-   ```
-   This runs `docker compose run --rm backend ...` to apply Prisma migrations, seed the admin user, and bring up Caddy just long enough to push the router config through its admin API.
+## Quick Start (Prebuilt Images)
+Use this path when you want to run Switchyard without local Node builds.
 
-3. **Start the stack**
-   ```bash
-   docker compose pull
-   docker compose up -d
-   ```
-
-4. **Log in and create your first service**
-   - Console: `http://console.switchyard.localhost:8080` (or your `ROUTER_CONSOLE_SUBDOMAIN.ROUTER_DOMAIN`).
-   - API: `http://localhost:4201`.
-   - Default admin user (created by migrations/seed): `admin@switchyard.dev / Switchyard!123`.
-
-That’s it—you can now register a service (Docker image + container `APP_PORT`), deploy to either slot, and switch active traffic between them. Caddy automatically exposes:
-- `slot-a.<service>.switchyard.localhost` → Slot A
-- `slot-b.<service>.switchyard.localhost` → Slot B
-- `<service>.switchyard.localhost` → whichever slot is active
-
-Need to refresh the router or DB later? Re-run `docker compose exec backend pnpm run caddyfile` or `pnpm run seed` inside the backend container as required.
-
-## Local Development Bootstrap
-If you plan to hack on the repo (compile TypeScript, run Jest, etc.), use the helper script that now lives at `scripts/init-local.sh`:
-
+1. Create a workspace and pull deployment artifacts.
 ```bash
-cd scripts
-./init-local.sh
+mkdir switchyard && cd switchyard
+curl -LO https://raw.githubusercontent.com/CuAuPro/switchyard/master/docker-compose.yml
+curl -LO https://raw.githubusercontent.com/CuAuPro/switchyard/master/.env.example
+mkdir -p scripts
+curl -L https://raw.githubusercontent.com/CuAuPro/switchyard/master/scripts/init.sh -o scripts/init.sh
+chmod +x scripts/init.sh
+cp .env.example .env
 ```
 
-It handles everything the compose stack doesn’t:
-1. Installs dependencies in `backend/`, `frontend/`, and `sample-app/`.
-2. Applies Prisma migrations (deploy → dev fallback) and seeds the admin user.
-3. Runs `pnpm run caddyfile` for preview/testing.
-4. Builds the sample workload (`switchyard-sample:latest`) when Docker CLI is present so autostarted containers have an image to run.
-5. Ensures the `switchyard-net` Docker network exists for local Docker workflows.
-
-Use this script only on dev machines—it isn’t required when you deploy the compose stack directly on a server.
-
-## Need more detail?
-- Backend internals, schema changes, and API contracts: `backend/README.md`.
-- Frontend development workflow: `frontend/README.md` (see repo).
-- Initialization notes: `INIT.md` (mirrors the `init-local.sh` flow above).
-- Building/pushing container images (backend, frontend, sample workload): `scripts/dev/publish-images.sh`.
-
-## Building & Publishing Images
-Switchyard’s compose file expects two images: one for the backend API and one for the Angular console. When you’re ready to produce deployable artifacts:
-
-### Build
+2. Prepare env file.
 ```bash
-# Backend (Node/Express API)
-docker build -t your-dockerhub-username/switchyard-backend:latest ./backend
-
-# Frontend (Angular static bundle served via nginx)
-docker build -t your-dockerhub-username/switchyard-frontend:latest ./frontend
-
-# Sample workload (optional demo app)
-docker build -t your-dockerhub-username/switchyard-sample:latest ./sample-app
+# edit .env values for your environment (JWT_SECRET, ROUTER_DOMAIN, image tags, etc.)
 ```
-Adjust the tag names as needed (e.g., `:v1.0.0`). Sample apps are not required for production deployments, so there’s no need to build `sample-app/` unless you plan to use it for demos.
 
-### Publish to Docker Hub
+3. Initialize database + seed + router.
 ```bash
-docker login
-docker push your-dockerhub-username/switchyard-backend:latest
-docker push your-dockerhub-username/switchyard-frontend:latest
-docker push your-dockerhub-username/switchyard-sample:latest  # optional demo
+# Linux/macOS
+./scripts/init.sh
 
-# or use the helper script (accepts backend/frontend/sample-app targets)
-scripts/dev/publish-images.sh your-dockerhub-username backend frontend sample-app
-scripts/dev/publish-images.ps1 -Registry your-dockerhub-username -Targets backend,frontend,sample-app
+# Windows PowerShell
+powershell -ExecutionPolicy Bypass -File .\scripts\init.ps1
 ```
-Set `BACKEND_IMAGE` and `FRONTEND_IMAGE` in your `.env` (or deployment environment) to point at the pushed tags, then rerun `docker compose up -d` to pull them.
 
-Happy shipping!
+4. Start stack.
+```bash
+docker compose up -d
+```
+
+5. Open console.
+- Production compose default: `http://console.switchyard.localhost:9000`
+- Dev compose default: `http://console.switchyard.localhost:8080`
+
+Default credentials:
+- `admin@switchyard.dev`
+- `Switchyard!123`
+
+## Local Development
+For full local development (build/test/edit backend + frontend), use:
+
+```bash
+./scripts/init-local.sh
+```
+
+This script installs dependencies, runs migrations, seeds data, ensures Docker network setup, starts Caddy (dev compose), and pushes the generated router config.
+
+## Compose Files
+- `docker-compose.yml`
+  - Uses prebuilt backend/frontend images
+  - Exposes Caddy on `9000` (HTTP), `443` (HTTPS), `2019` (admin)
+- `docker-compose.dev.yml`
+  - Builds local backend/frontend Dockerfiles
+  - Exposes Caddy on `8080` (HTTP), `8443` (HTTPS), `2019` (admin)
+
+## Build and Publish Images
+```bash
+# backend
+docker build -t cuaupro/switchyard-backend:latest ./backend
+
+# frontend
+docker build -t cuaupro/switchyard-frontend:latest ./frontend
+
+# optional sample app
+docker build -t cuaupro/switchyard-sample:latest ./sample-app
+```
+
+Push:
+```bash
+docker push cuaupro/switchyard-backend:latest
+docker push cuaupro/switchyard-frontend:latest
+```
+
+Set `BACKEND_IMAGE` and `FRONTEND_IMAGE` in `.env`, then restart compose.
+
+## Project Docs
+- Backend internals and API details: `backend/README.md`
+- Frontend architecture and workflows: `frontend/README.md`
