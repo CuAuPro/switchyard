@@ -45,6 +45,11 @@ pnpm run dev          # tsx watch src/server.ts (ESM)
 ```
 API runs at `http://localhost:4201`, WebSockets at `/ws`, Swagger UI at `/docs`. The server always listens on port `4201`; expose/remap it via Docker or reverse proxies if you need a different public port.
 
+## Runtime Image Footprint
+- `backend/Dockerfile` now builds a lean runtime image: only `dist/` + production `node_modules` are copied.
+- Prisma migration assets (`prisma/`, `prisma.config.ts`, Prisma CLI) are intentionally excluded from the final runtime layer.
+- Run migrations/seed during init or CI/CD (for example `docker compose run --rm backend pnpm exec prisma migrate deploy` and `pnpm run seed`) before starting long-running containers.
+
 ## PNPM Scripts
 | Script | Description |
 | --- | --- |
