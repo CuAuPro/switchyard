@@ -36,6 +36,7 @@ type ServiceInput = {
     dockerImage: string;
     appPort?: number;
     weightPercent?: number;
+    envVars?: Record<string, string>;
   }>;
 };
 
@@ -59,6 +60,7 @@ type EnvironmentUpdateInput = {
   label: string;
   dockerImage?: string;
   appPort?: number;
+  envVars?: Record<string, string>;
 };
 
 type UpdateServiceInput = {
@@ -146,8 +148,28 @@ const SLOT_B_LABEL = 'slot-b';
 const buildContainerName = (serviceName: string, label: string) =>
   `switchyard-${sanitizeName(serviceName)}-${sanitizeName(label)}`;
 
-
 const parseMetadata = parseEnvironmentMetadata;
+
+const normalizeEnvVars = (envVars?: Record<string, string>): Record<string, string> | undefined => {
+  if (!envVars) return undefined;
+  const normalized = Object.fromEntries(
+    Object.entries(envVars)
+      .map(([key, value]) => [key.trim(), value])
+      .filter(([key, value]) => key.length > 0 && typeof value === 'string'),
+  );
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+};
+
+const sameEnvVars = (left?: Record<string, string>, right?: Record<string, string>) => {
+  const a = normalizeEnvVars(left);
+  const b = normalizeEnvVars(right);
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  const keysA = Object.keys(a).sort();
+  const keysB = Object.keys(b).sort();
+  if (keysA.length !== keysB.length) return false;
+  return keysA.every((key, index) => key === keysB[index] && a[key] === b[key]);
+};
 
 const cloneMetadata = (metadata: Prisma.JsonValue | null | undefined): Prisma.JsonObject => {
   if (metadata && typeof metadata === 'object' && !Array.isArray(metadata)) {
@@ -216,9 +238,10 @@ const buildEnvRecord = async ({
   isActive: boolean;
 }) => {
   const existingMeta = parseMetadata(existing?.metadata);
-  const { hostPort: existingHostPort, appPort: existingAppPort } = existingMeta;
+  const { hostPort: existingHostPort, appPort: existingAppPort, envVars: existingEnvVars } = existingMeta;
   const hostPort = await reserveHostPort(existingHostPort, usedPorts);
   const appPort = input.appPort ?? existingAppPort ?? 4000;
+  const envVars = normalizeEnvVars(input.envVars) ?? existingEnvVars;
   const dockerImage = resolveDockerImage(input, existing?.dockerImage);
   const containerName = buildContainerName(serviceName, label);
 
@@ -229,6 +252,7 @@ const buildEnvRecord = async ({
   const metadata = mergeMetadata(existing?.metadata, {
     hostPort,
     appPort,
+    envVars,
     containerName,
   });
 
@@ -273,6 +297,7 @@ const serializeService = (service: ServiceWithRelations) => {
         lastCheckAt: env.lastCheckAt,
         hostPort: meta.hostPort ?? null,
         appPort: meta.appPort ?? null,
+        envVars: meta.envVars ?? {},
         containerState: meta.containerState ?? 'stopped',
         containerName: meta.containerName ?? buildContainerName(service.name, env.label),
       };
@@ -333,10 +358,11 @@ const provisionDocker = async (serviceName: string, environments: ServiceEnviron
   for (const env of environments) {
     if (!env.dockerImage) continue;
     const parsed = parseMetadata(env.metadata);
-    const { hostPort, appPort } = parsed;
+    const { hostPort, appPort, envVars: customEnvVars } = parsed;
     if (!hostPort || !appPort) continue;
     const containerName = parsed.containerName ?? buildContainerName(serviceName, env.label);
     const envVars = {
+      ...(customEnvVars ?? {}),
       PORT: `${appPort}`,
       APP_PORT: `${appPort}`,
       APP_COLOR: env.label,
@@ -542,6 +568,16 @@ export const updateServiceConfig = async (input: UpdateServiceInput, actor: Acto
         envMetadata.appPort = envInput.appPort;
       }
 
+      if (Object.prototype.hasOwnProperty.call(envInput, 'envVars') && !sameEnvVars(envInput.envVars, parsed.envVars)) {
+        if (parsed.containerState === 'running') {
+          throw new HttpError(400, `Stop ${envInput.label} before changing env vars`);
+        }
+        const nextEnvVars = normalizeEnvVars(envInput.envVars);
+        metadataPatch.envVars = nextEnvVars;
+        envChangeDetails.push('environment variables updated');
+        envMetadata.envVars = nextEnvVars ?? {};
+      }
+
       const envUpdateData: Prisma.ServiceEnvironmentUpdateInput = {};
       if (
         typeof envInput.dockerImage === 'string' &&
@@ -669,6 +705,7 @@ export const startEnvironment = async (input: EnvironmentToggleInput, actor: Act
   const containerName = parsed.containerName ?? buildContainerName(service.name, environment.label);
 
   const envVars = {
+    ...(parsed.envVars ?? {}),
     PORT: `${parsed.appPort}`,
     APP_PORT: `${parsed.appPort}`,
     APP_COLOR: environment.label,

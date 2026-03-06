@@ -133,7 +133,8 @@
     font-size: 0.9rem;
   }
 
-  input {
+  input,
+  textarea {
     padding: 0.6rem 0.9rem;
     border-radius: 0.8rem;
     border: 1px solid rgba(148, 163, 184, 0.35);
@@ -434,7 +435,8 @@
     font-size: 0.85rem;
   }
 
-  input {
+  input,
+  textarea {
     padding: 0.6rem 0.8rem;
     border-radius: 0.8rem;
     border: 1px solid rgba(148, 163, 184, 0.35);

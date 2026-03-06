@@ -17,6 +17,7 @@ export const ServiceEnvironmentSchema = registry.register(
       lastCheckAt: z.string().nullable().optional(),
       hostPort: z.number().int().nullable().optional(),
       appPort: z.number().int().nullable().optional(),
+      envVars: z.record(z.string(), z.string()).optional(),
       containerState: z.enum(['running', 'stopped']).nullable().optional(),
       containerName: z.string().nullable().optional(),
     })
@@ -32,6 +33,7 @@ export const ServiceEnvironmentSchema = registry.register(
         lastLatencyMs: 32,
         hostPort: 4205,
         appPort: 4000,
+        envVars: { LOG_LEVEL: 'debug', FEATURE_FLAG_X: 'true' },
         containerState: 'running',
         containerName: 'switchyard-sample-blue',
       },

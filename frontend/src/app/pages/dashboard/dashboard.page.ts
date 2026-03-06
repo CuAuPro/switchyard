@@ -64,6 +64,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
       dockerImage: ['cuaupro/switchyard-sample:latest', [Validators.required, Validators.minLength(3)]],
       appPort: [4000, [Validators.required, Validators.min(1), Validators.max(65535)]],
       healthEndpoint: [''],
+      envVarsText: [''],
     });
   }
 
@@ -120,16 +121,17 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
 
   registerService() {
     if (this.createServiceForm.invalid || this.creating()) return;
-    const { name, description, repositoryUrl, dockerImage, appPort, healthEndpoint } =
+    const { name, description, repositoryUrl, dockerImage, appPort, healthEndpoint, envVarsText } =
       this.createServiceForm.getRawValue();
     const appPortNum = Number(appPort);
+    const parsedEnvVars = this.parseEnvVarsText(envVarsText);
     this.creating.set(true);
     const payload: CreateServicePayload = {
       name,
       description: description?.trim() || undefined,
       environments: [
-        { label: 'slot-a', dockerImage, appPort: appPortNum, weightPercent: 0 },
-        { label: 'slot-b', dockerImage, appPort: appPortNum, weightPercent: 100 },
+        { label: 'slot-a', dockerImage, appPort: appPortNum, weightPercent: 0, envVars: parsedEnvVars },
+        { label: 'slot-b', dockerImage, appPort: appPortNum, weightPercent: 100, envVars: parsedEnvVars },
       ],
     };
     const repoTrimmed = repositoryUrl?.trim();
@@ -152,6 +154,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
             dockerImage: 'cuaupro/switchyard-sample:latest',
             appPort: 4000,
             healthEndpoint: '',
+            envVarsText: '',
           });
           this.loadData(true);
         },
@@ -226,7 +229,8 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     const form = this.envForms.get(environment.id);
     if (!form?.valid || !this.canEdit(environment)) return;
     this.setEnvSaving(environment.id, true);
-    const { dockerImage, appPort } = form.getRawValue();
+    const { dockerImage, appPort, envVarsText } = form.getRawValue();
+    const parsedEnvVars = this.parseEnvVarsText(envVarsText);
     this.api
       .updateService(service.id, {
         environments: [
@@ -234,6 +238,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
             label: environment.label,
             dockerImage,
             appPort: Number(appPort),
+            envVars: parsedEnvVars,
           },
         ],
       })
@@ -480,6 +485,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
         this.fb.nonNullable.group({
           dockerImage: ['', [Validators.required, Validators.minLength(3)]],
           appPort: [4000, [Validators.required, Validators.min(1), Validators.max(65535)]],
+          envVarsText: [''],
         }),
       );
     }
@@ -487,9 +493,35 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
       {
         dockerImage: env.dockerImage ?? '',
         appPort: env.appPort ?? 4000,
+        envVarsText: this.formatEnvVars(env.envVars),
       },
       { emitEvent: false },
     );
+  }
+
+  private parseEnvVarsText(raw: string): Record<string, string> | undefined {
+    const lines = raw
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+    if (lines.length === 0) return undefined;
+    const envVars: Record<string, string> = {};
+    for (const line of lines) {
+      const separatorIndex = line.indexOf('=');
+      if (separatorIndex <= 0) continue;
+      const key = line.slice(0, separatorIndex).trim();
+      const value = line.slice(separatorIndex + 1).trim();
+      if (!key) continue;
+      envVars[key] = value;
+    }
+    return Object.keys(envVars).length > 0 ? envVars : undefined;
+  }
+
+  private formatEnvVars(envVars?: Record<string, string> | null): string {
+    if (!envVars) return '';
+    return Object.entries(envVars)
+      .map(([key, value]) => `${key}=${value}`)
+      .join('\n');
   }
 
   private toggleServiceFormState(service: Service) {

@@ -13,6 +13,7 @@ export interface ServiceEnvironment {
   dockerImage?: string | null;
   hostPort: number | null;
   appPort: number | null;
+  envVars?: Record<string, string>;
   containerState: ContainerState;
   containerName: string;
   lastCheckAt?: string | null;

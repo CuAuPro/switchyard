@@ -16,6 +16,9 @@ export type ServiceEnvironment = {
     lastCheckAt?: string | null;
     hostPort?: number | null;
     appPort?: number | null;
+    envVars?: {
+        [key: string]: string;
+    };
     containerState?: 'running' | 'stopped' | null;
     containerName?: string | null;
 };
@@ -72,6 +75,9 @@ export type CreateServiceRequest = {
         dockerImage: string;
         appPort?: number;
         weightPercent?: number;
+        envVars?: {
+            [key: string]: string;
+        };
     }>;
 };
 
@@ -86,6 +92,9 @@ export type UpdateServiceRequest = {
         label: string;
         dockerImage?: string;
         appPort?: number;
+        envVars?: {
+            [key: string]: string;
+        };
     }>;
 };
 

@@ -7,6 +7,7 @@ export type EnvironmentMetadata = {
   appPort?: number;
   containerState?: ContainerState;
   containerName?: string;
+  envVars?: Record<string, string>;
 };
 
 export const parseEnvironmentMetadata = (
@@ -20,5 +21,17 @@ export const parseEnvironmentMetadata = (
       ? value.containerState
       : undefined;
   const containerName = typeof value?.containerName === 'string' ? value.containerName : undefined;
-  return { hostPort, appPort, containerState, containerName };
+  let envVars: Record<string, string> | undefined;
+  if (value?.envVars && typeof value.envVars === 'object' && !Array.isArray(value.envVars)) {
+    const parsed: Record<string, string> = {};
+    for (const [key, envValue] of Object.entries(value.envVars as Record<string, unknown>)) {
+      if (key && typeof envValue === 'string') {
+        parsed[key] = envValue;
+      }
+    }
+    if (Object.keys(parsed).length > 0) {
+      envVars = parsed;
+    }
+  }
+  return { hostPort, appPort, containerState, containerName, envVars };
 };

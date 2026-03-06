@@ -63,6 +63,14 @@
               Health endpoint (optional)
               <input formControlName="healthEndpoint" placeholder="/healthz or https://app/health" />
             </label>
+            <label>
+              Extra env vars (optional)
+              <textarea
+                formControlName="envVarsText"
+                rows="4"
+                placeholder="FEATURE_X=true&#10;LOG_LEVEL=debug"
+              ></textarea>
+            </label>
             <button type="submit" [disabled]="createServiceForm.invalid || creating()">
               {{ creating() ? 'Registering...' : 'Create service' }}
             </button>
@@ -201,6 +209,15 @@
                     <label>
                       APP_PORT (inside container)
                       <input type="number" formControlName="appPort" [readonly]="!canEdit(env) || !isOperator()" />
+                    </label>
+                    <label>
+                      Extra env vars (KEY=VALUE per line)
+                      <textarea
+                        formControlName="envVarsText"
+                        rows="4"
+                        [readonly]="!canEdit(env) || !isOperator()"
+                        placeholder="FEATURE_X=true&#10;LOG_LEVEL=debug"
+                      ></textarea>
                     </label>
                     <button
                       type="submit"

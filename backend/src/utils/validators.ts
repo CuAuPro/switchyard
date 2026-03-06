@@ -14,6 +14,8 @@ const healthEndpointField = z
     },
     { message: 'Health endpoint must be an http(s) URL or a relative path without spaces' },
   );
+
+const envVarsField = z.record(z.string(), z.string());
 export const createServiceSchema = registry.register(
   'CreateServiceRequest',
   z
@@ -29,6 +31,7 @@ export const createServiceSchema = registry.register(
             dockerImage: z.string().min(3),
             appPort: z.number().int().min(1).max(65535).optional(),
             weightPercent: z.number().min(0).max(100).optional(),
+            envVars: envVarsField.optional(),
           }),
         )
         .superRefine((envs, ctx) => {
@@ -67,6 +70,7 @@ export const updateServiceSchema = registry.register(
             label: z.string().min(2),
             dockerImage: z.string().min(3).optional(),
             appPort: z.number().int().min(1).max(65535).optional(),
+            envVars: envVarsField.optional(),
           }),
         )
         .optional(),
