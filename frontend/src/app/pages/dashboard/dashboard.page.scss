@@ -56,6 +56,16 @@
     &:hover {
       background: #1e3a8a;
     }
+
+    &.ghost {
+      border-color: rgba(148, 163, 184, 0.4);
+      background: transparent;
+      color: inherit;
+
+      &:hover {
+        background: rgba(30, 58, 138, 0.25);
+      }
+    }
   }
 }
 
@@ -209,6 +219,12 @@
       border-color: #34d399;
       color: #bbf7d0;
     }
+  }
+
+  .create-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
   }
 }
 

@@ -7,13 +7,14 @@
     </div>
     <div class="actions">
       <span>{{ auth.name() || 'anonymous' }} · {{ auth.role() }}</span>
+      <button *ngIf="isOperator()" type="button" class="ghost" (click)="openCreatePanel()">Init new app</button>
       <button type="button" (click)="logout()">Logout</button>
     </div>
   </header>
 
   <section class="content">
     <div class="loading-state" *ngIf="loading()">
-      <p>Loading service...</p>
+      <p>Loading services...</p>
     </div>
 
     @if (!loading()) {
@@ -28,10 +29,10 @@
         <span *ngIf="wsStatusMessage()">{{ wsStatusMessage() }}</span>
       </section>
 
-      @if (services().length === 0) {
+      @if (createPanelOpen()) {
         <section class="empty-state">
           <div>
-            <h2>Register your first service</h2>
+            <h2>{{ services().length === 0 ? 'Register your first service' : 'Initialize a new app' }}</h2>
             <p>
               Use the prebuilt sample image: <code>cuaupro/switchyard-sample:latest</code> (no local build required).
               Provide the image tag and internal <code>APP_PORT</code>. Switchyard will reserve host ports for slot-a/slot-b
@@ -71,12 +72,28 @@
                 placeholder="FEATURE_X=true&#10;LOG_LEVEL=debug"
               ></textarea>
             </label>
-            <button type="submit" [disabled]="createServiceForm.invalid || creating()">
-              {{ creating() ? 'Registering...' : 'Create service' }}
-            </button>
-        </form>
+            <div class="create-actions">
+              <button type="submit" [disabled]="createServiceForm.invalid || creating()">
+                {{ creating() ? 'Registering...' : 'Create service' }}
+              </button>
+              <button type="button" class="ghost" (click)="closeCreatePanel()" [disabled]="creating()">
+                Cancel
+              </button>
+            </div>
+          </form>
         </section>
-      } @else {
+      }
+
+      @if (services().length === 0 && !createPanelOpen()) {
+        <section class="empty-state">
+          <div>
+            <h2>No apps yet</h2>
+            <p>Create your first app to initialize slot-a/slot-b.</p>
+          </div>
+        </section>
+      }
+
+      @if (services().length > 0) {
         @for (service of services(); track trackById($index, service)) {
           <article class="service-card">
             <header class="service-head">

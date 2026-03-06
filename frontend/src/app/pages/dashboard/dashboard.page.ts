@@ -34,6 +34,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   serviceForms = new Map<string, FormGroup>();
   envForms = new Map<string, FormGroup>();
   isOperator = signal(false);
+  createPanelOpen = signal(false);
   createServiceForm: FormGroup;
   metadataModal = signal<string | null>(null);
   wsStatus = signal<'connecting' | 'open' | 'closed' | 'error'>('connecting');
@@ -102,8 +103,10 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     this.isOperator.set(['admin', 'operator'].includes(this.auth.role() ?? 'viewer'));
     this.api.getServices().subscribe({
       next: (services) => {
-        const single = services.slice(0, 1);
-        this.services.set(single);
+        this.services.set(services);
+        if (services.length === 0) {
+          this.createPanelOpen.set(true);
+        }
         this.services().forEach((svc) => {
           this.ensureServiceForm(svc);
           this.toggleServiceFormState(svc);
@@ -156,6 +159,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
             healthEndpoint: '',
             envVarsText: '',
           });
+          this.createPanelOpen.set(false);
           this.loadData(true);
         },
         error: (err) => {
@@ -300,6 +304,15 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
 
   statusClass(status: EnvironmentStatus) {
     return this.statusStyles[status]?.className ?? 'status-unknown';
+  }
+
+  openCreatePanel() {
+    if (!this.isOperator()) return;
+    this.createPanelOpen.set(true);
+  }
+
+  closeCreatePanel() {
+    this.createPanelOpen.set(false);
   }
 
   slotName(env: ServiceEnvironment) {

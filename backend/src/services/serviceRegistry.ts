@@ -410,98 +410,55 @@ const reloadServiceOrThrow = async (serviceId: string) => {
 
 export const registerService = async (input: ServiceInput, actor: ActorUser) => {
   requireRole(actor.role, ['admin', 'operator']);
+  const normalizedName = input.name.trim();
+  if (!normalizedName) {
+    throw new HttpError(400, 'Service name is required');
+  }
+  const existingByName = await prisma.service.findUnique({ where: { name: normalizedName } });
+  if (existingByName) {
+    throw new HttpError(409, `Service '${normalizedName}' already exists`);
+  }
 
   const { slotA, slotB } = normalizeEnvs(input);
-  const existing = await prisma.service.findFirst({ include: { environments: true } });
-
-  if (!existing) {
-    const usedPorts = new Set<number>();
-    const slotARecord = await buildEnvRecord({
-      serviceName: input.name,
-      label: SLOT_A_LABEL,
-      input: slotA,
-      usedPorts,
-      isActive: false,
-    });
-    const slotBRecord = await buildEnvRecord({
-      serviceName: input.name,
-      label: SLOT_B_LABEL,
-      input: slotB,
-      usedPorts,
-      isActive: true,
-    });
-
-    const service = await prisma.service.create({
-      data: {
-        name: input.name,
-        description: input.description,
-        repositoryUrl: input.repositoryUrl,
-        healthEndpoint: input.healthEndpoint,
-        environments: { create: [slotARecord, slotBRecord] },
-        activeTrafficId: undefined,
-      },
-      include: serviceInclude,
-    });
-
-    await provisionDocker(service.name, service.environments);
-    const hydrated = await reloadServiceOrThrow(service.id);
-    eventBus.emitEvent({ type: 'service.updated', payload: hydrated });
-    void safeRegenerateCaddy(`service register (${service.name})`);
-    return serializeService(hydrated);
-  }
-
-  const usedPorts = new Set<number>();
-  const slotAEnv = existing.environments.find((env) => env.label === SLOT_A_LABEL);
-  const slotBEnv = existing.environments.find((env) => env.label === SLOT_B_LABEL);
-  if (!slotAEnv || !slotBEnv) {
-    throw new HttpError(400, "Existing service must include both 'slot-a' and 'slot-b' environments");
-  }
-
+  const usedPorts = await gatherUsedPorts();
   const slotARecord = await buildEnvRecord({
-    serviceName: existing.name,
+    serviceName: normalizedName,
     label: SLOT_A_LABEL,
     input: slotA,
-    existing: slotAEnv,
     usedPorts,
-    isActive: slotAEnv.isActive,
+    isActive: false,
   });
   const slotBRecord = await buildEnvRecord({
-    serviceName: existing.name,
+    serviceName: normalizedName,
     label: SLOT_B_LABEL,
     input: slotB,
-    existing: slotBEnv,
     usedPorts,
-    isActive: slotBEnv.isActive,
+    isActive: true,
   });
-  const activeTrafficId = slotARecord.isActive ? slotAEnv.id : slotBRecord.isActive ? slotBEnv.id : slotBEnv.id;
 
-  await prisma.$transaction([
-    prisma.serviceEnvironment.update({
-      where: { id: slotAEnv.id },
-      data: slotARecord,
-    }),
-    prisma.serviceEnvironment.update({
-      where: { id: slotBEnv.id },
-      data: slotBRecord,
-    }),
-    prisma.service.update({
-      where: { id: existing.id },
-      data: { activeTrafficId },
-    }),
-  ]);
+  const service = await prisma.service.create({
+    data: {
+      name: normalizedName,
+      description: input.description,
+      repositoryUrl: input.repositoryUrl,
+      healthEndpoint: input.healthEndpoint,
+      environments: { create: [slotARecord, slotBRecord] },
+      activeTrafficId: undefined,
+    },
+    include: serviceInclude,
+  });
 
-  const updated = await reloadServiceOrThrow(existing.id);
-  await provisionDocker(updated.name, updated.environments);
-  const finalService = await reloadServiceOrThrow(existing.id);
-  eventBus.emitEvent({ type: 'service.updated', payload: finalService });
-  void safeRegenerateCaddy(`service update (${finalService.name})`);
+  await provisionDocker(service.name, service.environments);
+  const hydrated = await reloadServiceOrThrow(service.id);
+  eventBus.emitEvent({ type: 'service.updated', payload: hydrated });
+  void safeRegenerateCaddy(`service register (${service.name})`);
   await logActivity({
-    serviceId: finalService.id,
+    serviceId: hydrated.id,
     actor,
-    type: 'service.reseeded',
-    message: `Reinitialized ${finalService.name} registration`,
+    type: 'service.created',
+    message: `Created service ${hydrated.name} with slot-a/slot-b`,
   });
-  return serializeService(finalService);
+  return serializeService(hydrated);
 };
 
 export const listServices = async () => {
