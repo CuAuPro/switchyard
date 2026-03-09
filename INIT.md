@@ -15,6 +15,12 @@ This script performs:
 4. `pnpm run caddyfile` to emit the latest Caddyfile preview and push it via the admin API if configured.
 5. `docker build -t switchyard-sample ./sample-app` (if Docker CLI is detected) so the backend can launch sample containers automatically.
 
+Before running compose, ensure `caddy/Caddyfile` exists locally:
+```bash
+cp caddy/Caddyfile.template caddy/Caddyfile
+```
+Then set custom TLS cert paths in `caddy/Caddyfile` if needed.
+
 Once it finishes (intended for local development), start the whole stack:
 ```powershell
 docker compose up --build

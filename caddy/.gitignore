@@ -2,3 +2,5 @@ config/*
 data/*
 !config/.gitkeep
 !data/.gitkeep
+Caddyfile
+!Caddyfile.template

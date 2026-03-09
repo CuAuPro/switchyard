@@ -34,12 +34,16 @@ mkdir -p scripts
 curl -L https://raw.githubusercontent.com/CuAuPro/switchyard/master/scripts/init.sh -o scripts/init.sh
 chmod +x scripts/init.sh
 cp .env.example .env
+cp caddy/Caddyfile.template caddy/Caddyfile
 ```
 
 2. Prepare env file.
 ```bash
 # edit .env values for your environment (JWT_SECRET, ROUTER_DOMAIN, image tags, etc.)
+# edit caddy/Caddyfile if you want custom TLS cert paths
 ```
+
+`caddy/Caddyfile` is local-only (gitignored). Commit shared defaults in `caddy/Caddyfile.template`.
 
 3. Initialize database + seed + router.
 ```bash

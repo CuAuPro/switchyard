@@ -1,0 +1,12 @@
+# Base Caddyfile template.
+# Copy this file to ./caddy/Caddyfile and customize TLS for your environment.
+# Backend updates routing via the Admin API; this file just bootstraps the admin endpoint.
+{
+	admin {$CADDY_ADMIN}
+	# Optional custom certs:
+	# tls /etc/caddy/certs/public.crt /etc/caddy/certs/private.key
+}
+
+:80 {
+	respond "Switchyard router is managing routes via Admin API." 200
+}
