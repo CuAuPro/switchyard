@@ -30,8 +30,9 @@ Use this path when you want to run Switchyard without local Node builds.
 mkdir switchyard && cd switchyard
 curl -LO https://raw.githubusercontent.com/CuAuPro/switchyard/master/docker-compose.yml
 curl -LO https://raw.githubusercontent.com/CuAuPro/switchyard/master/.env.example
-mkdir -p scripts
+mkdir -p scripts caddy
 curl -L https://raw.githubusercontent.com/CuAuPro/switchyard/master/scripts/init.sh -o scripts/init.sh
+curl -L https://raw.githubusercontent.com/CuAuPro/switchyard/master/caddy/Caddyfile.template -o caddy/Caddyfile.template
 chmod +x scripts/init.sh
 cp .env.example .env
 cp caddy/Caddyfile.template caddy/Caddyfile
