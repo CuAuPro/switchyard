@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Switchyard">
+  <rect width="64" height="64" rx="12" fill="#030712" />
+  <path d="M32 52V33" stroke="#F8FAFC" stroke-width="6" stroke-linecap="round" />
+  <path d="M32 33L20 18" stroke="#F8FAFC" stroke-width="5" stroke-linecap="round" />
+  <path d="M32 33L44 18" stroke="#F8FAFC" stroke-width="5" stroke-linecap="round" />
+  <circle cx="20" cy="18" r="6" fill="#3B82F6" />
+  <circle cx="44" cy="18" r="6" fill="#10B981" />
+  <circle cx="32" cy="33" r="4" fill="#F59E0B" />
+</svg>
