@@ -36,6 +36,9 @@ Use `backend/.env.host.example` or `backend/.env.docker.example` as the base.
 | `DATABASE_URL` | Yes | `file:./dev.db` | Prisma datasource URL. Supports SQLite (`file:`) and PostgreSQL (`postgresql://...`). |
 | `JWT_SECRET` | Yes | `dev-secret-change-me` | Secret used to sign JWT tokens. Set a strong value in non-dev environments. |
 | `JWT_EXPIRES_IN` | No | `1h` | JWT TTL (for example `15m`, `1h`, `24h`). |
+| `ADMIN_EMAIL` | No | `admin@switchyard.dev` | Email used by `pnpm run seed` for the bootstrap admin account. |
+| `ADMIN_NAME` | No | `Switchyard Admin` | Display name used by `pnpm run seed` for the bootstrap admin account. |
+| `ADMIN_PASSWORD` | No | `Switchyard!123` | Password used by `pnpm run seed` for the bootstrap admin account (min 8 chars). |
 | `CADDY_ADMIN_URL` | Yes | `http://caddy:2019` | Caddy admin API endpoint used when pushing generated router configs. |
 | `ROUTER_DOMAIN` | Yes | `switchyard.localhost` | Base domain for service and console hosts. |
 | `ROUTER_CONSOLE_SUBDOMAIN` | Yes | `console` | Console subdomain prefix. Produces `console.<ROUTER_DOMAIN>`. |
@@ -83,6 +86,7 @@ And set:
 ## Key Env Vars
 - `DATABASE_URL`
 - `JWT_SECRET`
+- `ADMIN_EMAIL` / `ADMIN_PASSWORD`
 - `CADDY_ADMIN_URL`
 - `ROUTER_DOMAIN`
 - `ROUTER_CONSOLE_SUBDOMAIN`

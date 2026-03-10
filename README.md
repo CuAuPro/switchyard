@@ -40,7 +40,7 @@ cp caddy/Caddyfile.template caddy/Caddyfile
 
 2. Prepare env file.
 ```bash
-# edit .env values for your environment (JWT_SECRET, ROUTER_DOMAIN, image tags, etc.)
+# edit .env values for your environment (JWT_SECRET, ADMIN_EMAIL/ADMIN_PASSWORD, ROUTER_DOMAIN, image tags, etc.)
 # edit caddy/Caddyfile if you want custom TLS cert paths
 ```
 
@@ -65,8 +65,8 @@ docker compose up -d
 - Dev compose default: `http://console.switchyard.localhost:8080`
 
 Default credentials:
-- `admin@switchyard.dev`
-- `Switchyard!123`
+- `ADMIN_EMAIL` from `.env` (default: `admin@switchyard.dev`)
+- `ADMIN_PASSWORD` from `.env` (default: `Switchyard!123`)
 
 ## Local Development
 For full local development (build/test/edit backend + frontend), use:

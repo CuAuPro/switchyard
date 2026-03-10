@@ -9,6 +9,9 @@ services:
       PORT: 4201
       DATABASE_URL: ${DATABASE_URL:-file:./dev.db}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@switchyard.dev}
+      ADMIN_NAME: ${ADMIN_NAME:-Switchyard Admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Switchyard!123}
       ROUTER_DOMAIN: ${ROUTER_DOMAIN:-switchyard.localhost}
       ROUTER_CONSOLE_SUBDOMAIN: ${ROUTER_CONSOLE_SUBDOMAIN:-console}
       CONSOLE_TARGET_ORIGIN: ${CONSOLE_TARGET_ORIGIN:-http://frontend:80}
