@@ -24,7 +24,6 @@ RUN rm -rf \
 FROM node:22-alpine
 WORKDIR /app
 RUN apk add --no-cache docker-cli
-COPY ./hosts /app/hosts
 COPY --from=build /app/package.json ./
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/prisma.config.ts ./prisma.config.ts
