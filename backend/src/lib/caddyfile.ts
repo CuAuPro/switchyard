@@ -68,7 +68,7 @@ export const buildCaddyfileContents = async () => {
   const buildHostname = (serviceName: string, prefix?: string) => {
     const serviceSlug = sanitizeHost(serviceName);
     if (prefix) {
-      return `${prefix}.${serviceSlug}.${routerDomain}`;
+      return `${prefix}-${serviceSlug}.${routerDomain}`;
     }
     return `${serviceSlug}.${routerDomain}`;
   };

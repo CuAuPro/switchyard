@@ -407,7 +407,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
       return `${serviceName}.${domain}`;
     }
     if (env.label === 'slot-a' || env.label === 'slot-b') {
-      return `staging.${serviceName}.${domain}`;
+      return `staging-${serviceName}.${domain}`;
     }
     return `${serviceName}.${domain}`;
   }

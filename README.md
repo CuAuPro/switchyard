@@ -18,9 +18,9 @@ It combines:
 ## Routing Model
 For a service named `sample-api` and domain `switchyard.localhost`:
 - `sample-api.switchyard.localhost` -> active slot
-- `slot-a.sample-api.switchyard.localhost` -> Slot A
-- `slot-b.sample-api.switchyard.localhost` -> Slot B
-- `staging.sample-api.switchyard.localhost` -> non-active slot
+- `slot-a-sample-api.switchyard.localhost` -> Slot A
+- `slot-b-sample-api.switchyard.localhost` -> Slot B
+- `staging-sample-api.switchyard.localhost` -> non-active slot
 
 ## Quick Start (Prebuilt Images)
 Use this path when you want to run Switchyard without local Node builds.

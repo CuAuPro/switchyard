@@ -100,9 +100,9 @@ And set:
 
 ## Routing Behavior
 Generated Caddy routes include:
-- `slot-a.<service>.<domain>`
-- `slot-b.<service>.<domain>`
-- `staging.<service>.<domain>` (non-active slot)
+- `slot-a-<service>.<domain>`
+- `slot-b-<service>.<domain>`
+- `staging-<service>.<domain>` (non-active slot)
 - `<service>.<domain>` (active slot)
 - `console.<domain>` for UI + API reverse proxy
 
