@@ -65,6 +65,52 @@ export type Service = {
  */
 export type ServicesResponse = Array<Service>;
 
+export type SystemStats = {
+    timestamp: string;
+    host: {
+        hostname: string;
+        platform: string;
+        uptimeSeconds: number;
+        cpu: {
+            cores: number;
+            usagePercent: number | null;
+            loadAverage: {
+                oneMinute: number;
+                fiveMinutes: number;
+                fifteenMinutes: number;
+            };
+        };
+        memory: {
+            totalBytes: number;
+            usedBytes: number;
+            freeBytes: number;
+            usagePercent: number | null;
+        };
+        disk: {
+            totalBytes: number | null;
+            usedBytes: number | null;
+            availableBytes: number | null;
+        };
+    };
+    docker: {
+        containers: Array<{
+            serviceId: string;
+            serviceName: string;
+            environmentId: string;
+            environmentLabel: string;
+            containerName: string;
+            dockerImage: string | null;
+            state: 'running' | 'stopped' | 'missing';
+            cpuPercent: number | null;
+            memUsage: string | null;
+            memPercent: number | null;
+            netIO: string | null;
+            blockIO: string | null;
+            pids: number | null;
+        }>;
+    };
+};
+
 /**
  * Payload for registering a new service with slot-a/slot-b environments.
  */
@@ -208,6 +254,22 @@ export type PostApiServicesResponses = {
 };
 
 export type PostApiServicesResponse = PostApiServicesResponses[keyof PostApiServicesResponses];
+
+export type GetApiSystemStatsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/system/stats';
+};
+
+export type GetApiSystemStatsResponses = {
+    /**
+     * Host and docker runtime statistics
+     */
+    200: SystemStats;
+};
+
+export type GetApiSystemStatsResponse = GetApiSystemStatsResponses[keyof GetApiSystemStatsResponses];
 
 export type GetApiAuthMeData = {
     body?: never;

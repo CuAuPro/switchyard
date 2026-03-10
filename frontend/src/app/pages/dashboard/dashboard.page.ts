@@ -6,7 +6,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 
 import { Service, ServiceEnvironment, EnvironmentStatus, ServiceActivity } from '../../core/models/service.model';
-import { ApiService, UpdateServicePayload, CreateServicePayload } from '../../core/services/api.service';
+import { ApiService, UpdateServicePayload, CreateServicePayload, SystemStatsPayload } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { RealtimeService } from '../../core/services/realtime.service';
 import { RealtimeEvent } from '../../core/models/events.model';
@@ -21,6 +21,9 @@ import { ServiceMetadataModalComponent } from '../../shared/components/service-m
   styleUrl: './dashboard.page.scss',
 })
 export class DashboardPageComponent implements OnInit, OnDestroy {
+  systemStats = signal<SystemStatsPayload | null>(null);
+  systemStatsLoading = signal(false);
+  systemStatsError = signal<string | null>(null);
   services = signal<Service[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -30,6 +33,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   envSaving = signal(new Set<string>());
   envToggling = signal(new Set<string>());
   activityCollapse = signal(new Set<string>());
+  serviceCollapse = signal(new Set<string>());
   healthPulse = signal(new Set<string>());
   serviceForms = new Map<string, FormGroup>();
   envForms = new Map<string, FormGroup>();
@@ -42,6 +46,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   private errorTimer: ReturnType<typeof setTimeout> | null = null;
   private subscriptions: Subscription[] = [];
   private pulseTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private statsTimer: ReturnType<typeof setInterval> | null = null;
   private readonly statusStyles: Record<EnvironmentStatus, { label: string; className: string }> = {
     healthy: { label: 'Healthy', className: 'status-healthy' },
     degraded: { label: 'Degraded', className: 'status-degraded' },
@@ -78,6 +83,8 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
       return;
     }
     this.loadData(true);
+    this.loadSystemStats(true);
+    this.statsTimer = setInterval(() => this.loadSystemStats(), 20000);
     this.realtime.connect();
     this.subscriptions.push(
       this.realtime.events$.subscribe((event) => this.handleRealtimeEvent(event)),
@@ -94,6 +101,10 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     }
     this.pulseTimers.forEach((timer) => clearTimeout(timer));
     this.pulseTimers.clear();
+    if (this.statsTimer) {
+      clearInterval(this.statsTimer);
+      this.statsTimer = null;
+    }
     this.subscriptions.forEach((sub) => sub.unsubscribe());
     this.subscriptions = [];
   }
@@ -459,6 +470,23 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     return `${serviceName}.${domain}`;
   }
 
+  loadSystemStats(forceSpinner = false) {
+    if (forceSpinner) {
+      this.systemStatsLoading.set(true);
+    }
+    this.api.getSystemStats().subscribe({
+      next: (stats) => {
+        this.systemStats.set(stats);
+        this.systemStatsError.set(null);
+        this.systemStatsLoading.set(false);
+      },
+      error: (err) => {
+        this.systemStatsLoading.set(false);
+        this.systemStatsError.set(this.extractErrorDetail(err) || 'Unable to load system stats');
+      },
+    });
+  }
+
   routeUrl(service: Service, env: ServiceEnvironment) {
     const port = this.routerPort();
     const portSuffix = port ? `:${port}` : '';
@@ -483,6 +511,20 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
 
   isActivityCollapsed(serviceId: string) {
     return this.activityCollapse().has(serviceId);
+  }
+
+  toggleServiceCard(serviceId: string) {
+    const next = new Set(this.serviceCollapse());
+    if (next.has(serviceId)) {
+      next.delete(serviceId);
+    } else {
+      next.add(serviceId);
+    }
+    this.serviceCollapse.set(next);
+  }
+
+  isServiceCollapsed(serviceId: string) {
+    return this.serviceCollapse().has(serviceId);
   }
 
   openMetadataModal(serviceId: string) {
@@ -761,6 +803,49 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
 
   private slugify(value: string) {
     return value.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+  }
+
+  containerStats() {
+    const stats = this.systemStats();
+    if (!stats) return [];
+    return [...stats.docker.containers].sort((a, b) => {
+      const byService = a.serviceName.localeCompare(b.serviceName);
+      if (byService !== 0) return byService;
+      return a.environmentLabel.localeCompare(b.environmentLabel);
+    });
+  }
+
+  containerStateClass(state: 'running' | 'stopped' | 'missing') {
+    if (state === 'running') return 'status-healthy';
+    if (state === 'stopped') return 'status-degraded';
+    return 'status-unhealthy';
+  }
+
+  formatPercent(value: number | null | undefined, digits = 1) {
+    if (typeof value !== 'number' || Number.isNaN(value)) return 'n/a';
+    return `${value.toFixed(digits)}%`;
+  }
+
+  formatBytes(value: number | null | undefined) {
+    if (typeof value !== 'number' || value <= 0) return 'n/a';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let size = value;
+    let idx = 0;
+    while (size >= 1024 && idx < units.length - 1) {
+      size /= 1024;
+      idx += 1;
+    }
+    return `${size.toFixed(size >= 10 || idx === 0 ? 0 : 1)} ${units[idx]}`;
+  }
+
+  formatUptime(seconds: number | null | undefined) {
+    if (typeof seconds !== 'number' || seconds < 0) return 'n/a';
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
   }
 
   private hasValidRegistryCredentials(username?: string, password?: string) {

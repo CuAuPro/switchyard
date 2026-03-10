@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteApiServicesByServiceIdData, DeleteApiServicesByServiceIdResponses, GetApiAuthMeData, GetApiAuthMeResponses, GetApiServicesData, GetApiServicesResponses, PatchApiServicesByServiceIdData, PatchApiServicesByServiceIdResponses, PostApiAuthLoginData, PostApiAuthLoginResponses, PostApiServicesByServiceIdDeploymentsData, PostApiServicesByServiceIdDeploymentsResponses, PostApiServicesByServiceIdEnvironmentsByLabelStartData, PostApiServicesByServiceIdEnvironmentsByLabelStartResponses, PostApiServicesByServiceIdEnvironmentsByLabelStopData, PostApiServicesByServiceIdEnvironmentsByLabelStopResponses, PostApiServicesByServiceIdSwitchData, PostApiServicesByServiceIdSwitchResponses, PostApiServicesData, PostApiServicesResponses } from './types.gen';
+import type { DeleteApiServicesByServiceIdData, DeleteApiServicesByServiceIdResponses, GetApiAuthMeData, GetApiAuthMeResponses, GetApiServicesData, GetApiServicesResponses, GetApiSystemStatsData, GetApiSystemStatsResponses, PatchApiServicesByServiceIdData, PatchApiServicesByServiceIdResponses, PostApiAuthLoginData, PostApiAuthLoginResponses, PostApiServicesByServiceIdDeploymentsData, PostApiServicesByServiceIdDeploymentsResponses, PostApiServicesByServiceIdEnvironmentsByLabelStartData, PostApiServicesByServiceIdEnvironmentsByLabelStartResponses, PostApiServicesByServiceIdEnvironmentsByLabelStopData, PostApiServicesByServiceIdEnvironmentsByLabelStopResponses, PostApiServicesByServiceIdSwitchData, PostApiServicesByServiceIdSwitchResponses, PostApiServicesData, PostApiServicesResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -41,6 +41,12 @@ export const postApiServices = <ThrowOnError extends boolean = false>(options?: 
         'Content-Type': 'application/json',
         ...options?.headers
     }
+});
+
+export const getApiSystemStats = <ThrowOnError extends boolean = false>(options?: Options<GetApiSystemStatsData, ThrowOnError>) => (options?.client ?? client).get<GetApiSystemStatsResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/system/stats',
+    ...options
 });
 
 export const getApiAuthMe = <ThrowOnError extends boolean = false>(options?: Options<GetApiAuthMeData, ThrowOnError>) => (options?.client ?? client).get<GetApiAuthMeResponses, unknown, ThrowOnError>({

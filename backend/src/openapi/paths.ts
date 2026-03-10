@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { registry } from './registry.js';
-import { ServiceSchema, ServicesResponseSchema } from './schemas.js';
+import { ServiceSchema, ServicesResponseSchema, SystemStatsSchema } from './schemas.js';
 import {
   createServiceSchema,
   deploySchema,
@@ -86,6 +86,23 @@ registry.registerPath({
       content: {
         'application/json': {
           schema: ServicesResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/system/stats',
+  tags: ['System'],
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: {
+      description: 'Host and docker runtime statistics',
+      content: {
+        'application/json': {
+          schema: SystemStatsSchema,
         },
       },
     },

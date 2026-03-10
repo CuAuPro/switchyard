@@ -6,8 +6,10 @@ import {
   CreateServiceRequest,
   PostApiServicesByServiceIdDeploymentsData,
   PostApiServicesByServiceIdSwitchData,
+  SystemStats,
   UpdateServiceRequest,
   deleteApiServicesByServiceId,
+  getApiSystemStats,
   getApiServices,
   patchApiServicesByServiceId,
   postApiServices,
@@ -19,6 +21,7 @@ import {
 
 export type CreateServicePayload = CreateServiceRequest;
 export type UpdateServicePayload = UpdateServiceRequest;
+export type SystemStatsPayload = SystemStats;
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -29,6 +32,15 @@ export class ApiService {
         throwOnError: true as const,
       }),
     ).pipe(map((data) => data as unknown as Service[]));
+  }
+
+  getSystemStats(): Observable<SystemStatsPayload> {
+    return from(
+      getApiSystemStats({
+        responseStyle: 'data' as const,
+        throwOnError: true as const,
+      }),
+    ).pipe(map((data) => data as unknown as SystemStatsPayload));
   }
 
   createService(payload: CreateServicePayload) {

@@ -138,3 +138,54 @@ export const ServicesResponseSchema = registry.register(
   'ServicesResponse',
   z.array(ServiceSchema).openapi({ description: 'List of managed services' }),
 );
+
+export const SystemStatsSchema = registry.register(
+  'SystemStats',
+  z.object({
+    timestamp: z.string(),
+    host: z.object({
+      hostname: z.string(),
+      platform: z.string(),
+      uptimeSeconds: z.number().int(),
+      cpu: z.object({
+        cores: z.number().int(),
+        usagePercent: z.number().nullable(),
+        loadAverage: z.object({
+          oneMinute: z.number(),
+          fiveMinutes: z.number(),
+          fifteenMinutes: z.number(),
+        }),
+      }),
+      memory: z.object({
+        totalBytes: z.number(),
+        usedBytes: z.number(),
+        freeBytes: z.number(),
+        usagePercent: z.number().nullable(),
+      }),
+      disk: z.object({
+        totalBytes: z.number().nullable(),
+        usedBytes: z.number().nullable(),
+        availableBytes: z.number().nullable(),
+      }),
+    }),
+    docker: z.object({
+      containers: z.array(
+        z.object({
+          serviceId: z.string(),
+          serviceName: z.string(),
+          environmentId: z.string(),
+          environmentLabel: z.string(),
+          containerName: z.string(),
+          dockerImage: z.string().nullable(),
+          state: z.enum(['running', 'stopped', 'missing']),
+          cpuPercent: z.number().nullable(),
+          memUsage: z.string().nullable(),
+          memPercent: z.number().nullable(),
+          netIO: z.string().nullable(),
+          blockIO: z.string().nullable(),
+          pids: z.number().nullable(),
+        }),
+      ),
+    }),
+  }),
+);
