@@ -47,7 +47,6 @@ export const ensureDockerContainer = async ({
   network,
   registryAuth,
 }: DockerRunOptions) => {
-  await removeDockerContainer(name).catch(() => undefined);
   if (registryAuth?.username && registryAuth?.password) {
     const args = ['login'];
     if (registryAuth.registry) args.push(registryAuth.registry);
@@ -70,6 +69,9 @@ export const ensureDockerContainer = async ({
       child.stdin.end();
     });
   }
+  // Always pull first so mutable tags like "latest" refresh before container recreation.
+  await execFileAsync('docker', ['pull', image]);
+  await removeDockerContainer(name).catch(() => undefined);
 
   const envArgs = Object.entries(env).flatMap(([key, value]) => ['-e', `${key}=${value}`]);
 
