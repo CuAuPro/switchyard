@@ -62,6 +62,9 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
       name: ['', [Validators.required, Validators.minLength(2)]],
       description: [''],
       repositoryUrl: [''],
+      registryHost: [''],
+      registryUsername: [''],
+      registryPassword: [''],
       dockerImage: ['cuaupro/switchyard-sample:latest', [Validators.required, Validators.minLength(3)]],
       appPort: [4000, [Validators.required, Validators.min(1), Validators.max(65535)]],
       healthEndpoint: [''],
@@ -124,10 +127,25 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
 
   registerService() {
     if (this.createServiceForm.invalid || this.creating()) return;
-    const { name, description, repositoryUrl, dockerImage, appPort, healthEndpoint, envVarsText } =
+    const {
+      name,
+      description,
+      repositoryUrl,
+      registryHost,
+      registryUsername,
+      registryPassword,
+      dockerImage,
+      appPort,
+      healthEndpoint,
+      envVarsText,
+    } =
       this.createServiceForm.getRawValue();
     const appPortNum = Number(appPort);
     const parsedEnvVars = this.parseEnvVarsText(envVarsText);
+    if (!this.hasValidRegistryCredentials(registryUsername, registryPassword)) {
+      this.setGlobalError('Provide both registry username and registry password, or leave both empty');
+      return;
+    }
     this.creating.set(true);
     const payload: CreateServicePayload = {
       name,
@@ -145,6 +163,18 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     if (healthTrimmed) {
       payload.healthEndpoint = healthTrimmed;
     }
+    const registryHostTrimmed = registryHost?.trim();
+    if (registryHostTrimmed) {
+      payload.registryHost = registryHostTrimmed;
+    }
+    const registryUsernameTrimmed = registryUsername?.trim();
+    if (registryUsernameTrimmed) {
+      payload.registryUsername = registryUsernameTrimmed;
+    }
+    const registryPasswordTrimmed = registryPassword?.trim();
+    if (registryPasswordTrimmed) {
+      payload.registryPassword = registryPasswordTrimmed;
+    }
     this.api
       .createService(payload)
       .subscribe({
@@ -154,6 +184,9 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
             name: '',
             description: '',
             repositoryUrl: '',
+            registryHost: '',
+            registryUsername: '',
+            registryPassword: '',
             dockerImage: 'cuaupro/switchyard-sample:latest',
             appPort: 4000,
             healthEndpoint: '',
@@ -183,6 +216,20 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     }
     if (raw.healthEndpoint?.trim()) {
       payload.healthEndpoint = raw.healthEndpoint.trim();
+    }
+    if (typeof raw.registryHost === 'string') {
+      payload.registryHost = raw.registryHost.trim();
+    }
+    if (typeof raw.registryUsername === 'string') {
+      payload.registryUsername = raw.registryUsername.trim();
+    }
+    if (typeof raw.registryPassword === 'string' && raw.registryPassword.trim().length > 0) {
+      payload.registryPassword = raw.registryPassword.trim();
+    }
+    if (!this.hasValidRegistryCredentials(payload.registryUsername, payload.registryPassword)) {
+      this.setGlobalError('Provide both registry username and registry password, or leave both empty');
+      this.detailsSaving.set(false);
+      return;
     }
     this.api.updateService(service.id, payload).subscribe({
       next: () => {
@@ -478,6 +525,9 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
           description: [''],
           repositoryUrl: [''],
           healthEndpoint: [''],
+          registryHost: [''],
+          registryUsername: [''],
+          registryPassword: [''],
         }),
       );
     }
@@ -486,6 +536,9 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
         description: service.description ?? '',
         repositoryUrl: service.repositoryUrl ?? '',
         healthEndpoint: service.healthEndpoint ?? '',
+        registryHost: service.registryHost ?? '',
+        registryUsername: service.registryUsername ?? '',
+        registryPassword: '',
       },
       { emitEvent: false },
     );
@@ -708,6 +761,12 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
 
   private slugify(value: string) {
     return value.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+  }
+
+  private hasValidRegistryCredentials(username?: string, password?: string) {
+    const hasUsername = typeof username === 'string' && username.trim().length > 0;
+    const hasPassword = typeof password === 'string' && password.trim().length > 0;
+    return hasUsername === hasPassword;
   }
 
 }

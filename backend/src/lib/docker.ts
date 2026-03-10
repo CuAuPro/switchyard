@@ -1,7 +1,14 @@
 import { execFile } from 'child_process';
 import { promisify } from 'util';
+import { spawn } from 'child_process';
 
 const execFileAsync = promisify(execFile);
+
+export type DockerRegistryAuth = {
+  registry?: string;
+  username: string;
+  password: string;
+};
 
 export type DockerRunOptions = {
   name: string;
@@ -10,6 +17,7 @@ export type DockerRunOptions = {
   containerPort: number;
   env?: Record<string, string>;
   network?: string;
+  registryAuth?: DockerRegistryAuth;
 };
 
 const runDockerCommand = async (args: string[]) => {
@@ -37,8 +45,31 @@ export const ensureDockerContainer = async ({
   containerPort,
   env = {},
   network,
+  registryAuth,
 }: DockerRunOptions) => {
   await removeDockerContainer(name).catch(() => undefined);
+  if (registryAuth?.username && registryAuth?.password) {
+    const args = ['login'];
+    if (registryAuth.registry) args.push(registryAuth.registry);
+    args.push('-u', registryAuth.username, '--password-stdin');
+    await new Promise<void>((resolve, reject) => {
+      const child = spawn('docker', args, { stdio: ['pipe', 'pipe', 'pipe'] });
+      let stderr = '';
+      child.stderr.on('data', (chunk) => {
+        stderr += chunk.toString();
+      });
+      child.on('error', reject);
+      child.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+          return;
+        }
+        reject(new Error(stderr.trim() || `docker login failed with exit code ${code}`));
+      });
+      child.stdin.write(registryAuth.password);
+      child.stdin.end();
+    });
+  }
 
   const envArgs = Object.entries(env).flatMap(([key, value]) => ['-e', `${key}=${value}`]);
 

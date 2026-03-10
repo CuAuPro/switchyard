@@ -52,6 +52,9 @@ export type Service = {
     description?: string | null;
     repositoryUrl?: string | null;
     healthEndpoint?: string | null;
+    registryHost?: string | null;
+    registryUsername?: string | null;
+    registryPasswordSet?: boolean;
     environments: Array<ServiceEnvironment>;
     deployments: Array<Deployment>;
     activities: Array<ServiceActivity>;
@@ -70,6 +73,9 @@ export type CreateServiceRequest = {
     description?: string;
     repositoryUrl?: string;
     healthEndpoint?: string;
+    registryHost?: string;
+    registryUsername?: string;
+    registryPassword?: string;
     environments: Array<{
         label: string;
         dockerImage: string;
@@ -88,6 +94,9 @@ export type UpdateServiceRequest = {
     description?: string;
     repositoryUrl?: string;
     healthEndpoint?: string;
+    registryHost?: string;
+    registryUsername?: string;
+    registryPassword?: string;
     environments?: Array<{
         label: string;
         dockerImage?: string;

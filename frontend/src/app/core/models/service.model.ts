@@ -46,6 +46,9 @@ export interface Service {
   description?: string | null;
   repositoryUrl?: string | null;
   healthEndpoint?: string | null;
+  registryHost?: string | null;
+  registryUsername?: string | null;
+  registryPasswordSet?: boolean;
   activeTrafficId?: string | null;
   environments: ServiceEnvironment[];
   deployments: Deployment[];

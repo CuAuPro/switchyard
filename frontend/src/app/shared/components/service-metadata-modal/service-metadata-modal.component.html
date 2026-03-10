@@ -5,7 +5,7 @@
         <div>
           <p class="eyebrow">Metadata</p>
           <h2>{{ title }}</h2>
-          <p class="hint">Description, repo URL, and health endpoint feed the Switchyard dashboard.</p>
+          <p class="hint">Description, health checks, and optional registry credentials feed runtime provisioning.</p>
         </div>
         <button type="button" class="ghost" (click)="close()">Close</button>
       </header>
@@ -23,6 +23,26 @@
           Health endpoint
           <input formControlName="healthEndpoint" placeholder="/healthz or https://url/healthz" />
         </label>
+        <label>
+          Image registry host
+          <input formControlName="registryHost" placeholder="docker.io or fra.ocir.io" />
+        </label>
+        <label>
+          Registry username
+          <input formControlName="registryUsername" placeholder="tenant/user" />
+        </label>
+        <label>
+          Registry password/token
+          <input
+            type="password"
+            formControlName="registryPassword"
+            placeholder="Leave empty to keep current password"
+            autocomplete="new-password"
+          />
+        </label>
+        <p class="hint" *ngIf="service?.registryPasswordSet">
+          A registry password is already saved. Enter a new value only if you want to rotate it.
+        </p>
         <footer>
           <button type="button" class="ghost" (click)="close()">Cancel</button>
           <button type="submit" [disabled]="submitDisabled">{{ submitLabel }}</button>

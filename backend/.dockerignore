@@ -13,5 +13,6 @@ pnpm-debug.log*
 !.env.example
 Dockerfile.*
 /dev.db
+/switchyard.db
 README.md
 **/*.tsbuildinfo

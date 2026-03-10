@@ -14,6 +14,7 @@ import type {
 import { env as envConfig } from '../config/env.js';
 import { regenerateCaddyfile } from '../lib/caddyfile.js';
 import {
+  type DockerRegistryAuth,
   ensureDockerContainer,
   getDockerContainerState,
   removeDockerContainer,
@@ -31,6 +32,9 @@ type ServiceInput = {
   description?: string;
   repositoryUrl?: string;
   healthEndpoint?: string;
+  registryHost?: string;
+  registryUsername?: string;
+  registryPassword?: string;
   environments: Array<{
     label: string;
     dockerImage: string;
@@ -68,6 +72,9 @@ type UpdateServiceInput = {
   description?: string;
   repositoryUrl?: string;
   healthEndpoint?: string;
+  registryHost?: string;
+  registryUsername?: string;
+  registryPassword?: string;
   environments?: EnvironmentUpdateInput[];
 };
 
@@ -95,6 +102,7 @@ const serviceInclude = {
 
 type ActivityEventWithRelations = Prisma.ActivityEventGetPayload<{ include: typeof activityInclude }>;
 type ServiceWithRelations = Prisma.ServiceGetPayload<{ include: typeof serviceInclude }>;
+type ServiceWithEnvironments = Prisma.ServiceGetPayload<{ include: { environments: true } }>;
 
 type ActivityActor = { id?: string; role?: Role };
 
@@ -158,6 +166,41 @@ const normalizeEnvVars = (envVars?: Record<string, string>): Record<string, stri
       .filter(([key, value]) => key.length > 0 && typeof value === 'string'),
   );
   return Object.keys(normalized).length > 0 ? normalized : undefined;
+};
+
+const normalizeTextField = (value?: string): string | undefined => {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const readOptionalStringField = (record: Record<string, unknown>, field: string): string | null => {
+  const value = record[field];
+  return typeof value === 'string' ? value : null;
+};
+
+const buildRegistryAuth = (service: {
+  registryHost?: string | null;
+  registryUsername?: string | null;
+  registryPassword?: string | null;
+}): DockerRegistryAuth | undefined => {
+  const username = normalizeTextField(service.registryUsername ?? undefined);
+  const password = normalizeTextField(service.registryPassword ?? undefined);
+  if (!username || !password) return undefined;
+  const registry = normalizeTextField(service.registryHost ?? undefined);
+  return {
+    registry,
+    username,
+    password,
+  };
+};
+
+const resolveRuntimeDockerImage = (image: string, registryHost?: string | null) => {
+  const trimmedImage = image.trim();
+  const normalizedRegistryHost = normalizeTextField(registryHost ?? undefined);
+  if (!trimmedImage || !normalizedRegistryHost) return trimmedImage;
+  if (trimmedImage.startsWith(`${normalizedRegistryHost}/`)) return trimmedImage;
+  return `${normalizedRegistryHost}/${trimmedImage}`;
 };
 
 const sameEnvVars = (left?: Record<string, string>, right?: Record<string, string>) => {
@@ -273,6 +316,10 @@ const buildEnvRecord = async ({
 const serializeService = (service: ServiceWithRelations) => {
   const envRecords = service.environments ?? [];
   const activityRecords = service.activities ?? [];
+  const serviceRecord = service as unknown as Record<string, unknown>;
+  const registryHost = readOptionalStringField(serviceRecord, 'registryHost');
+  const registryUsername = readOptionalStringField(serviceRecord, 'registryUsername');
+  const registryPassword = readOptionalStringField(serviceRecord, 'registryPassword');
 
   return {
     id: service.id,
@@ -280,6 +327,9 @@ const serializeService = (service: ServiceWithRelations) => {
     description: service.description,
     repositoryUrl: service.repositoryUrl,
     healthEndpoint: service.healthEndpoint,
+    registryHost,
+    registryUsername,
+    registryPasswordSet: Boolean(registryPassword),
     activeTrafficId: service.activeTrafficId,
     createdAt: service.createdAt,
     updatedAt: service.updatedAt,
@@ -352,7 +402,12 @@ const normalizeEnvs = (input: ServiceInput) => {
   return { slotA, slotB };
 };
 
-const provisionDocker = async (serviceName: string, environments: ServiceEnvironment[]) => {
+const provisionDocker = async (
+  serviceName: string,
+  serviceConfig: { registryHost?: string | null },
+  environments: ServiceEnvironment[],
+  registryAuth?: DockerRegistryAuth,
+) => {
   if (!envConfig.dockerAutostart) return;
 
   for (const env of environments) {
@@ -368,13 +423,15 @@ const provisionDocker = async (serviceName: string, environments: ServiceEnviron
       APP_COLOR: env.label,
       APP_VERSION: `bootstrap-${new Date().toISOString()}`,
     };
+    const runtimeImage = resolveRuntimeDockerImage(env.dockerImage, serviceConfig.registryHost);
     await ensureDockerContainer({
       name: containerName,
-      image: env.dockerImage,
+      image: runtimeImage,
       hostPort,
       containerPort: appPort,
       env: envVars,
       network: envConfig.dockerNetwork || undefined,
+      registryAuth,
     }).catch((error) => {
       console.error(`[DOCKER] Failed to start ${containerName}`, error);
       throw new HttpError(500, `Failed to start docker container for ${env.label}`);
@@ -436,19 +493,34 @@ export const registerService = async (input: ServiceInput, actor: ActorUser) => 
     isActive: true,
   });
 
-  const service = await prisma.service.create({
-    data: {
-      name: normalizedName,
-      description: input.description,
-      repositoryUrl: input.repositoryUrl,
-      healthEndpoint: input.healthEndpoint,
-      environments: { create: [slotARecord, slotBRecord] },
-      activeTrafficId: undefined,
-    },
-    include: serviceInclude,
-  });
+  const createData: Prisma.ServiceCreateInput = {
+    name: normalizedName,
+    description: input.description,
+    repositoryUrl: input.repositoryUrl,
+    healthEndpoint: input.healthEndpoint,
+    environments: { create: [slotARecord, slotBRecord] },
+    activeTrafficId: undefined,
+  };
+  const createDataRecord = createData as unknown as Record<string, unknown>;
+  createDataRecord.registryHost = normalizeTextField(input.registryHost) ?? null;
+  createDataRecord.registryUsername = normalizeTextField(input.registryUsername) ?? null;
+  createDataRecord.registryPassword = normalizeTextField(input.registryPassword) ?? null;
 
-  await provisionDocker(service.name, service.environments);
+  const service = (await prisma.service.create({
+    data: createData,
+    include: serviceInclude,
+  })) as ServiceWithRelations;
+
+  await provisionDocker(
+    service.name,
+    { registryHost: readOptionalStringField(service as unknown as Record<string, unknown>, 'registryHost') },
+    service.environments,
+    buildRegistryAuth({
+      registryHost: readOptionalStringField(service as unknown as Record<string, unknown>, 'registryHost'),
+      registryUsername: readOptionalStringField(service as unknown as Record<string, unknown>, 'registryUsername'),
+      registryPassword: readOptionalStringField(service as unknown as Record<string, unknown>, 'registryPassword'),
+    }),
+  );
   const hydrated = await reloadServiceOrThrow(service.id);
   eventBus.emitEvent({ type: 'service.updated', payload: hydrated });
   void safeRegenerateCaddy(`service register (${service.name})`);
@@ -470,14 +542,15 @@ export const listServices = async () => {
 export const updateServiceConfig = async (input: UpdateServiceInput, actor: ActorUser) => {
   requireRole(actor.role, ['admin', 'operator']);
 
-  const service = await prisma.service.findUnique({
+  const service = (await prisma.service.findUnique({
     where: { id: input.serviceId },
     include: { environments: true },
-  });
+  })) as ServiceWithEnvironments | null;
   if (!service) throw new HttpError(404, 'Service not found');
 
   const tx: Prisma.PrismaPromise<unknown>[] = [];
   const serviceUpdateData: Prisma.ServiceUpdateInput = {};
+  const serviceUpdateDataRecord = serviceUpdateData as unknown as Record<string, unknown>;
   const serviceMetadataChanges: string[] = [];
   const envChangeLogs: Array<{
     environmentId: string;
@@ -485,6 +558,11 @@ export const updateServiceConfig = async (input: UpdateServiceInput, actor: Acto
     details: string[];
     metadata: Record<string, unknown>;
   }> = [];
+
+  const serviceRecord = service as unknown as Record<string, unknown>;
+  const currentRegistryHost = readOptionalStringField(serviceRecord, 'registryHost');
+  const currentRegistryUsername = readOptionalStringField(serviceRecord, 'registryUsername');
+  const currentRegistryPassword = readOptionalStringField(serviceRecord, 'registryPassword');
 
   if (typeof input.description !== 'undefined' && input.description !== service.description) {
     serviceUpdateData.description = input.description;
@@ -497,6 +575,44 @@ export const updateServiceConfig = async (input: UpdateServiceInput, actor: Acto
   if (typeof input.healthEndpoint !== 'undefined' && input.healthEndpoint !== service.healthEndpoint) {
     serviceUpdateData.healthEndpoint = input.healthEndpoint;
     serviceMetadataChanges.push('healthEndpoint');
+  }
+  if (typeof input.registryHost !== 'undefined') {
+    const nextRegistryHost = normalizeTextField(input.registryHost) ?? null;
+    if (nextRegistryHost !== currentRegistryHost) {
+      serviceUpdateDataRecord.registryHost = nextRegistryHost;
+      serviceMetadataChanges.push('registryHost');
+    }
+  }
+  const incomingRegistryUsername = typeof input.registryUsername !== 'undefined';
+  const incomingRegistryPassword = typeof input.registryPassword !== 'undefined';
+  let nextRegistryUsername = currentRegistryUsername;
+  let nextRegistryPassword = currentRegistryPassword;
+  if (incomingRegistryUsername) {
+    nextRegistryUsername = normalizeTextField(input.registryUsername) ?? null;
+  }
+  if (incomingRegistryPassword) {
+    nextRegistryPassword = normalizeTextField(input.registryPassword) ?? null;
+  }
+  if (incomingRegistryUsername && !incomingRegistryPassword && nextRegistryUsername === null) {
+    // Clearing username should also clear any previously stored password.
+    nextRegistryPassword = null;
+  }
+  if (incomingRegistryPassword && !incomingRegistryUsername && nextRegistryPassword === null) {
+    // Clearing password should also clear any previously stored username.
+    nextRegistryUsername = null;
+  }
+  const hasRegistryUsername = Boolean(nextRegistryUsername);
+  const hasRegistryPassword = Boolean(nextRegistryPassword);
+  if (hasRegistryUsername !== hasRegistryPassword) {
+    throw new HttpError(400, 'Registry username and password must both be provided');
+  }
+  if (nextRegistryUsername !== currentRegistryUsername) {
+    serviceUpdateDataRecord.registryUsername = nextRegistryUsername;
+    serviceMetadataChanges.push('registryUsername');
+  }
+  if (nextRegistryPassword !== currentRegistryPassword) {
+    serviceUpdateDataRecord.registryPassword = nextRegistryPassword;
+    serviceMetadataChanges.push('registryPassword');
   }
   const hasServiceMetadataUpdate = serviceMetadataChanges.length > 0;
   if (hasServiceMetadataUpdate) {
@@ -595,10 +711,10 @@ export const updateServiceConfig = async (input: UpdateServiceInput, actor: Acto
 export const deployVersion = async (input: DeploymentInput, actor: ActorUser) => {
   requireRole(actor.role, ['admin', 'operator']);
 
-  const service = await prisma.service.findUnique({
+  const service = (await prisma.service.findUnique({
     where: { id: input.serviceId },
     include: { environments: true },
-  });
+  })) as ServiceWithEnvironments | null;
   if (!service) throw new HttpError(404, 'Service not found');
 
   const environment = service.environments.find((env) => env.label === input.environmentLabel);
@@ -671,11 +787,15 @@ export const startEnvironment = async (input: EnvironmentToggleInput, actor: Act
 
   await ensureDockerContainer({
     name: containerName,
-    image: environment.dockerImage,
+    image: resolveRuntimeDockerImage(
+      environment.dockerImage,
+      readOptionalStringField(service as unknown as Record<string, unknown>, 'registryHost'),
+    ),
     hostPort,
     containerPort: parsed.appPort,
     env: envVars,
     network: envConfig.dockerNetwork || undefined,
+    registryAuth: buildRegistryAuth(service),
   });
 
   const updatedMetadata = mergeMetadata(environment.metadata, {
@@ -745,7 +865,10 @@ export const stopEnvironment = async (input: EnvironmentToggleInput, actor: Acto
 export const switchEnvironment = async (input: SwitchInput, actor: ActorUser) => {
   requireRole(actor.role, ['admin', 'operator']);
 
-  const service = await prisma.service.findUnique({ where: { id: input.serviceId }, include: { environments: true } });
+  const service = (await prisma.service.findUnique({
+    where: { id: input.serviceId },
+    include: { environments: true },
+  })) as ServiceWithEnvironments | null;
   if (!service) throw new HttpError(404, 'Service not found');
 
   const targetEnv = service.environments.find((env) => env.label === input.toLabel);
@@ -818,10 +941,10 @@ export const recordHealth = async (environmentId: string, status: EnvironmentSta
 export const deleteService = async (serviceId: string, actor: ActorUser) => {
   requireRole(actor.role, ['admin', 'operator']);
 
-  const service = await prisma.service.findUnique({
+  const service = (await prisma.service.findUnique({
     where: { id: serviceId },
     include: { environments: true },
-  });
+  })) as ServiceWithEnvironments | null;
   if (!service) throw new HttpError(404, 'Service not found');
 
   for (const environment of service.environments) {

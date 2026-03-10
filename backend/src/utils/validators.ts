@@ -16,6 +16,7 @@ const healthEndpointField = z
   );
 
 const envVarsField = z.record(z.string(), z.string());
+const registryField = z.string().trim().min(1);
 export const createServiceSchema = registry.register(
   'CreateServiceRequest',
   z
@@ -24,6 +25,9 @@ export const createServiceSchema = registry.register(
       description: z.string().optional(),
       repositoryUrl: z.string().url().optional(),
       healthEndpoint: healthEndpointField.optional(),
+      registryHost: registryField.optional(),
+      registryUsername: registryField.optional(),
+      registryPassword: registryField.optional(),
       environments: z
         .array(
           z.object({
@@ -43,6 +47,17 @@ export const createServiceSchema = registry.register(
             });
           }
         }),
+    })
+    .superRefine((value, ctx) => {
+      const hasUsername = typeof value.registryUsername === 'string' && value.registryUsername.trim().length > 0;
+      const hasPassword = typeof value.registryPassword === 'string' && value.registryPassword.trim().length > 0;
+      if (hasUsername !== hasPassword) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Registry username and password must both be provided',
+          path: ['registryUsername'],
+        });
+      }
     })
     .openapi({
       description: 'Payload for registering a new service with slot-a/slot-b environments.',
@@ -64,6 +79,9 @@ export const updateServiceSchema = registry.register(
       description: z.string().optional(),
       repositoryUrl: z.string().url().optional(),
       healthEndpoint: healthEndpointField.optional(),
+      registryHost: z.string().trim().optional(),
+      registryUsername: z.string().trim().optional(),
+      registryPassword: registryField.optional(),
       environments: z
         .array(
           z.object({

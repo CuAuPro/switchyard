@@ -45,6 +45,9 @@ model Service {
   name            String               @unique
   description     String?
   repositoryUrl   String?
+  registryHost    String?
+  registryUsername String?
+  registryPassword String?
   activeTrafficId String?              @unique
   healthEndpoint  String?
   createdAt       DateTime             @default(now())

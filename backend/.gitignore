@@ -7,6 +7,8 @@
 # Local databases & Prisma artifacts
 /dev.db
 /dev.db-journal
+switchyard.db
+/switchyard.db-journal
 /prisma/migrations/**/README.md
 
 # Environment files

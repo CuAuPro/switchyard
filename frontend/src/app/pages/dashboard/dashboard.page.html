@@ -53,6 +53,18 @@
               <input formControlName="repositoryUrl" placeholder="https://github.com/org/repo" />
             </label>
             <label>
+              Image registry host (optional)
+              <input formControlName="registryHost" placeholder="docker.io or fra.ocir.io" />
+            </label>
+            <label>
+              Registry username (optional)
+              <input formControlName="registryUsername" placeholder="tenant/user" />
+            </label>
+            <label>
+              Registry password/token (optional)
+              <input type="password" formControlName="registryPassword" placeholder="Only needed for private images" />
+            </label>
+            <label>
               Docker image
               <input formControlName="dockerImage" placeholder="cuaupro/switchyard-sample:latest" />
             </label>

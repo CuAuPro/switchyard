@@ -96,6 +96,9 @@ export const ServiceSchema = registry.register(
       description: z.string().nullable().optional(),
       repositoryUrl: z.string().nullable().optional(),
       healthEndpoint: z.string().nullable().optional(),
+      registryHost: z.string().nullable().optional(),
+      registryUsername: z.string().nullable().optional(),
+      registryPasswordSet: z.boolean().optional(),
       environments: z.array(ServiceEnvironmentSchema),
       deployments: z.array(DeploymentSchema),
       activities: z.array(ServiceActivitySchema),
@@ -105,6 +108,9 @@ export const ServiceSchema = registry.register(
         id: 'svc1',
         name: 'sample-api',
         description: 'Example service',
+        registryHost: 'fra.ocir.io',
+        registryUsername: 'tenant/user',
+        registryPasswordSet: true,
         environments: [
           {
             id: 'env1',
