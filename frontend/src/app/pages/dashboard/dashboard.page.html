@@ -32,9 +32,14 @@
       <section class="system-stats-panel">
         <header>
           <h3>System stats</h3>
-          <button type="button" class="ghost" (click)="loadSystemStats(true)" [disabled]="systemStatsLoading()">
-            {{ systemStatsLoading() ? 'Refreshing…' : 'Refresh' }}
-          </button>
+          <div class="panel-actions">
+            <button type="button" class="ghost" (click)="toggleSystemStats()">
+              {{ systemStatsCollapsed() ? 'Show containers' : 'Hide containers' }}
+            </button>
+            <button type="button" class="ghost" (click)="loadSystemStats(true)" [disabled]="systemStatsLoading()">
+              {{ systemStatsLoading() ? 'Refreshing…' : 'Refresh' }}
+            </button>
+          </div>
         </header>
 
         @if (systemStatsError()) {
@@ -67,44 +72,46 @@
             </article>
           </div>
 
-          <div class="container-stats-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Container</th>
-                  <th>State</th>
-                  <th>CPU</th>
-                  <th>Memory</th>
-                  <th>Net I/O</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (container of containerStats(); track container.environmentId) {
+          @if (!systemStatsCollapsed()) {
+            <div class="container-stats-table">
+              <table>
+                <thead>
                   <tr>
-                    <td>
-                      <strong>{{ container.serviceName }}</strong>
-                      <small>{{ container.environmentLabel }} · {{ container.containerName }}</small>
-                    </td>
-                    <td>
-                      <span class="status-chip" [ngClass]="containerStateClass(container.state)">
-                        {{ container.state }}
-                      </span>
-                    </td>
-                    <td>{{ formatPercent(container.cpuPercent) }}</td>
-                    <td>
-                      <div>{{ container.memUsage || 'n/a' }}</div>
-                      <small>{{ formatPercent(container.memPercent) }}</small>
-                    </td>
-                    <td>{{ container.netIO || 'n/a' }}</td>
+                    <th>Container</th>
+                    <th>State</th>
+                    <th>CPU</th>
+                    <th>Memory</th>
+                    <th>Net I/O</th>
                   </tr>
-                } @empty {
-                  <tr>
-                    <td colspan="5">No containers tracked yet.</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  @for (container of containerStats(); track container.environmentId) {
+                    <tr>
+                      <td>
+                        <strong>{{ container.serviceName }}</strong>
+                        <small>{{ container.environmentLabel }} · {{ container.containerName }}</small>
+                      </td>
+                      <td>
+                        <span class="status-chip" [ngClass]="containerStateClass(container.state)">
+                          {{ container.state }}
+                        </span>
+                      </td>
+                      <td>{{ formatPercent(container.cpuPercent) }}</td>
+                      <td>
+                        <div>{{ container.memUsage || 'n/a' }}</div>
+                        <small>{{ formatPercent(container.memPercent) }}</small>
+                      </td>
+                      <td>{{ container.netIO || 'n/a' }}</td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="5">No containers tracked yet.</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
         }
       </section>
 

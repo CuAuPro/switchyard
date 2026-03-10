@@ -24,6 +24,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   systemStats = signal<SystemStatsPayload | null>(null);
   systemStatsLoading = signal(false);
   systemStatsError = signal<string | null>(null);
+  systemStatsCollapsed = signal(false);
   services = signal<Service[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -485,6 +486,10 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
         this.systemStatsError.set(this.extractErrorDetail(err) || 'Unable to load system stats');
       },
     });
+  }
+
+  toggleSystemStats() {
+    this.systemStatsCollapsed.set(!this.systemStatsCollapsed());
   }
 
   routeUrl(service: Service, env: ServiceEnvironment) {
