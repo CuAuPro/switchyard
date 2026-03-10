@@ -17,11 +17,13 @@ const healthUseContainerTargets = parseBoolean(
 
 export const env = {
   port: 4201,
-  databaseUrl: process.env.DATABASE_URL ?? 'file:./dev.db',
+  databaseUrl: process.env.DATABASE_URL ?? 'file:./switchyard.db',
   jwtSecret: process.env.JWT_SECRET ?? 'dev-secret-change-me',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '1h',
   healthCheckIntervalMs: Number(process.env.HEALTH_CHECK_INTERVAL_MS ?? 30000),
   caddyAdminUrl: process.env.CADDY_ADMIN_URL ?? '',
+  caddyTlsCertFile: process.env.CADDY_TLS_CERT_FILE?.trim() ?? '',
+  caddyTlsKeyFile: process.env.CADDY_TLS_KEY_FILE?.trim() ?? '',
   dockerAutostart: parseBoolean(process.env.DOCKER_AUTOSTART, true),
   dockerNetwork: process.env.DOCKER_NETWORK ?? '',
   routerTargetHost: (process.env.ROUTER_TARGET_HOST ?? 'http://localhost').replace(/\/$/, ''),

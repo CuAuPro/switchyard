@@ -7,7 +7,7 @@ import prismaPkg from '@prisma/client';
 
 const { PrismaClient } = prismaPkg;
 
-const databaseUrl = process.env.DATABASE_URL ?? 'file:./dev.db';
+const databaseUrl = process.env.DATABASE_URL ?? 'file:./switchyard.db';
 
 const isSqliteUrl = (url: string) => url.startsWith('file:') || url.startsWith('sqlite:');
 const isPostgresUrl = (url: string) => url.startsWith('postgres://') || url.startsWith('postgresql://');

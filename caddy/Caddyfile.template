@@ -1,10 +1,10 @@
 # Base Caddyfile template.
 # Copy this file to ./caddy/Caddyfile and customize TLS for your environment.
 # Backend updates routing via the Admin API; this file just bootstraps the admin endpoint.
+# Do NOT put `tls ...` in this global block. Configure generated-route TLS via:
+# CADDY_TLS_CERT_FILE and CADDY_TLS_KEY_FILE in .env
 {
 	admin {$CADDY_ADMIN}
-	# Optional custom certs:
-	# tls /etc/caddy/certs/public.crt /etc/caddy/certs/private.key
 }
 
 :80 {

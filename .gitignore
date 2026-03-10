@@ -23,7 +23,7 @@ coverage/
 
 # Prisma local databases
 backend/dev.db
-
+backend/switchyard.db
 # Tooling caches
 .turbo/
 .nx/

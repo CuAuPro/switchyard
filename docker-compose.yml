@@ -3,11 +3,11 @@ services:
   backend:
     image: ${BACKEND_IMAGE:-switchyard-backend:latest}
     volumes:
-      - ./backend/dev.db:/app/dev.db
+      - ./backend/switchyard.db:/app/switchyard.db
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       PORT: 4201
-      DATABASE_URL: ${DATABASE_URL:-file:./dev.db}
+      DATABASE_URL: ${DATABASE_URL:-file:./switchyard.db}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@switchyard.dev}
       ADMIN_NAME: ${ADMIN_NAME:-Switchyard Admin}
@@ -16,6 +16,8 @@ services:
       ROUTER_CONSOLE_SUBDOMAIN: ${ROUTER_CONSOLE_SUBDOMAIN:-console}
       CONSOLE_TARGET_ORIGIN: ${CONSOLE_TARGET_ORIGIN:-http://frontend:80}
       CADDY_ADMIN_URL: ${CADDY_ADMIN_URL:-http://caddy:2019}
+      CADDY_TLS_CERT_FILE: ${CADDY_TLS_CERT_FILE:-}
+      CADDY_TLS_KEY_FILE: ${CADDY_TLS_KEY_FILE:-}
       ROUTER_TARGET_HOST: ${ROUTER_TARGET_HOST:-http://backend:4000}
       DOCKER_NETWORK: ${DOCKER_NETWORK:-switchyard-net}
     networks:

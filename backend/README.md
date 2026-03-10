@@ -33,13 +33,15 @@ Use `backend/.env.host.example` or `backend/.env.docker.example` as the base.
 
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
-| `DATABASE_URL` | Yes | `file:./dev.db` | Prisma datasource URL. Supports SQLite (`file:`) and PostgreSQL (`postgresql://...`). |
+| `DATABASE_URL` | Yes | `file:./switchyard.db` | Prisma datasource URL. Supports SQLite (`file:`) and PostgreSQL (`postgresql://...`). |
 | `JWT_SECRET` | Yes | `dev-secret-change-me` | Secret used to sign JWT tokens. Set a strong value in non-dev environments. |
 | `JWT_EXPIRES_IN` | No | `1h` | JWT TTL (for example `15m`, `1h`, `24h`). |
 | `ADMIN_EMAIL` | No | `admin@switchyard.dev` | Email used by `pnpm run seed` for the bootstrap admin account. |
 | `ADMIN_NAME` | No | `Switchyard Admin` | Display name used by `pnpm run seed` for the bootstrap admin account. |
 | `ADMIN_PASSWORD` | No | `Switchyard!123` | Password used by `pnpm run seed` for the bootstrap admin account (min 8 chars). |
 | `CADDY_ADMIN_URL` | Yes | `http://caddy:2019` | Caddy admin API endpoint used when pushing generated router configs. |
+| `CADDY_TLS_CERT_FILE` | No | empty | Absolute path to custom TLS certificate file for generated HTTPS routes (requires key file too). |
+| `CADDY_TLS_KEY_FILE` | No | empty | Absolute path to custom TLS private key file for generated HTTPS routes (requires cert file too). |
 | `ROUTER_DOMAIN` | Yes | `switchyard.localhost` | Base domain for service and console hosts. |
 | `ROUTER_CONSOLE_SUBDOMAIN` | Yes | `console` | Console subdomain prefix. Produces `console.<ROUTER_DOMAIN>`. |
 | `CONSOLE_TARGET_ORIGIN` | Yes | `http://frontend:80` | Upstream target for console UI traffic inside generated Caddy config. |
@@ -66,14 +68,14 @@ pnpm run dev
 ## Docker Runtime Notes
 The runtime image is intentionally slim:
 - includes `dist/`, production dependencies, and Docker CLI
-- excludes Prisma migration files and Prisma CLI
+- includes Prisma CLI and `prisma/` migrations so `prisma migrate deploy` can run at runtime
 
 Operational implication:
 - run migrations/seed during init or CI/CD before long-running startup
 - example:
 ```bash
-docker compose run --rm backend pnpm exec prisma migrate deploy
-docker compose run --rm backend pnpm run seed
+docker compose run --rm --entrypoint /bin/sh backend -lc "./node_modules/.bin/prisma migrate deploy"
+docker compose run --rm --entrypoint node backend dist/utils/seed.js
 ```
 
 For host Docker control from the backend container, mount:

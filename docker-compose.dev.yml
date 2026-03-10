@@ -6,7 +6,7 @@ services:
     env_file:
       - ./backend/.env.docker
     volumes:
-      - ./backend/dev.db:/app/dev.db
+      - ./backend/switchyard.db:/app/switchyard.db
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "${BACKEND_PORT:-4201}:4201"

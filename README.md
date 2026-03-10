@@ -42,6 +42,7 @@ cp caddy/Caddyfile.template caddy/Caddyfile
 ```bash
 # edit .env values for your environment (JWT_SECRET, ADMIN_EMAIL/ADMIN_PASSWORD, ROUTER_DOMAIN, image tags, etc.)
 # edit caddy/Caddyfile if you want custom TLS cert paths
+# Optional for generated routes: set CADDY_TLS_CERT_FILE and CADDY_TLS_KEY_FILE in .env
 ```
 
 `caddy/Caddyfile` is local-only (gitignored). Commit shared defaults in `caddy/Caddyfile.template`.
@@ -76,6 +77,8 @@ For full local development (build/test/edit backend + frontend), use:
 ```
 
 This script installs dependencies, runs migrations, seeds data, ensures Docker network setup, starts Caddy (dev compose), and pushes the generated router config.
+
+For prebuilt production images, run `scripts/init.sh` first; it runs `prisma migrate deploy` before seed/router push.
 
 ## Compose Files
 - `docker-compose.yml`

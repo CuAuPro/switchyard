@@ -9,6 +9,8 @@ const sanitizeHost = (name: string) => name.toLowerCase().replace(/[^a-z0-9-]/g,
 const ensureDomain = (value: string) => value.replace(/^\./, '') || 'switchyard.localhost';
 const SLOT_A_LABEL = 'slot-a';
 const SLOT_B_LABEL = 'slot-b';
+const hasCustomTls = Boolean(env.caddyTlsCertFile && env.caddyTlsKeyFile);
+const tlsDirective = hasCustomTls ? `  tls ${env.caddyTlsCertFile} ${env.caddyTlsKeyFile}\n` : '';
 
 const resolveProxyTarget = (environment: {
   targetUrl: string;
@@ -28,11 +30,11 @@ const buildHostBlock = (
   host: string,
   environment: { label: string; targetUrl: string; metadata: Prisma.JsonValue | null },
 ) => {
-  const siteLabel = host.startsWith('http://') || host.startsWith('https://') ? host : `http://${host}`;
+  const siteLabel = host.startsWith('http://') || host.startsWith('https://') ? host : hasCustomTls ? `https://${host}` : `http://${host}`;
   const proxyTarget = resolveProxyTarget(environment);
   return `${siteLabel} {
   encode gzip
-  reverse_proxy ${proxyTarget} {
+${tlsDirective}  reverse_proxy ${proxyTarget} {
     header_up X-Switchyard-Env ${environment.label}
   }
 }
@@ -51,7 +53,7 @@ const buildGlobalBlock = () => {
   }
   return `{
   admin ${adminAddress}
-  auto_https off
+${hasCustomTls ? '' : '  auto_https off\n'}
 }
 `;
 };
@@ -102,7 +104,7 @@ export const buildCaddyfileContents = async () => {
   if (consoleSubdomain && consoleTarget) {
     const consoleHost = `${consoleSubdomain}.${routerDomain}`;
     const consoleApiTarget = env.dockerNetwork ? 'http://backend:4201' : `${env.routerTargetHost}:4201`;
-    const consoleBlock = `{
+    const consoleHttpBlock = `{
   encode gzip
   @api path /api/* /ws
   handle @api {
@@ -113,8 +115,21 @@ export const buildCaddyfileContents = async () => {
   }
 }
 `;
-    blocks.push(`http://${consoleHost} ${consoleBlock}`);
-    blocks.push(`https://${consoleHost} ${consoleBlock}`);
+    blocks.push(`http://${consoleHost} ${consoleHttpBlock}`);
+    if (hasCustomTls) {
+      const consoleHttpsBlock = `{
+  encode gzip
+${tlsDirective}  @api path /api/* /ws
+  handle @api {
+    reverse_proxy ${consoleApiTarget}
+  }
+  handle {
+    reverse_proxy ${consoleTarget}
+  }
+}
+`;
+      blocks.push(`https://${consoleHost} ${consoleHttpsBlock}`);
+    }
   }
 
   const globalBlock = buildGlobalBlock();
