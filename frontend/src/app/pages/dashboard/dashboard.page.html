@@ -305,6 +305,7 @@
                         [disabled]="!canStart(env) || isEnvToggling(env.id) || !isOperator()"
                         [title]="startTooltip(env)"
                       >
+                        <span class="button-spinner" *ngIf="isEnvToggling(env.id) && canStart(env)" aria-hidden="true"></span>
                         {{ isEnvToggling(env.id) && canStart(env) ? 'Starting…' : 'Start' }}
                       </button>
                       <button
@@ -314,6 +315,7 @@
                         [disabled]="!canStop(env) || isEnvToggling(env.id) || !isOperator()"
                         [title]="stopTooltip(env)"
                       >
+                        <span class="button-spinner" *ngIf="isEnvToggling(env.id) && canStop(env)" aria-hidden="true"></span>
                         {{ isEnvToggling(env.id) && canStop(env) ? 'Stopping…' : 'Stop' }}
                       </button>
                     </div>
@@ -362,10 +364,42 @@
                           [disabled]="!canRemove(env) || isEnvToggling(env.id) || !isOperator()"
                           [title]="removeTooltip(env)"
                         >
+                          <span class="button-spinner" *ngIf="isEnvToggling(env.id) && canRemove(env)" aria-hidden="true"></span>
                           {{ isEnvToggling(env.id) && canRemove(env) ? 'Removing…' : 'Remove' }}
                         </button>
                       </div>
                     </form>
+
+                    @if (isStopProdModalOpen(service, env)) {
+                      <div class="confirm-modal-backdrop" (click)="closeStopProdModal()">
+                        <section class="confirm-modal" (click)="$event.stopPropagation()">
+                          <header>
+                            <p class="eyebrow">Active Slot</p>
+                            <h3>Stop production slot?</h3>
+                            <p>{{ stopProdMessage(service, env) }}</p>
+                          </header>
+                          <footer>
+                            <button
+                              type="button"
+                              (click)="confirmStopProd(service, env, true)"
+                              [disabled]="!rerouteTarget(service, env) || isEnvToggling(env.id)"
+                              [title]="rerouteTarget(service, env) ? '' : 'No running standby slot available'"
+                            >
+                              Yes, reroute first
+                            </button>
+                            <button
+                              type="button"
+                              class="ghost danger"
+                              (click)="confirmStopProd(service, env, false)"
+                              [disabled]="isEnvToggling(env.id)"
+                            >
+                              Yes, stop prod
+                            </button>
+                            <button type="button" class="ghost" (click)="closeStopProdModal()">No</button>
+                          </footer>
+                        </section>
+                      </div>
+                    }
                   </section>
                 }
               </div>

@@ -42,6 +42,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   createPanelOpen = signal(false);
   createServiceForm: FormGroup;
   metadataModal = signal<string | null>(null);
+  stopProdModal = signal<{ serviceId: string; environmentLabel: string } | null>(null);
   wsStatus = signal<'connecting' | 'open' | 'closed' | 'error'>('connecting');
   wsStatusMessage = signal<string | null>(null);
   private errorTimer: ReturnType<typeof setTimeout> | null = null;
@@ -275,10 +276,74 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
 
   stopEnvironment(service: Service, environment: ServiceEnvironment) {
     if (!this.isOperator() || !this.canStop(environment)) return;
+    if (environment.isActive) {
+      this.stopProdModal.set({ serviceId: service.id, environmentLabel: environment.label });
+      return;
+    }
+    this.executeStopEnvironment(service, environment);
+  }
+
+  confirmStopProd(service: Service, environment: ServiceEnvironment, rerouteFirst: boolean) {
+    if (!environment.isActive) {
+      this.executeStopEnvironment(service, environment);
+      return;
+    }
+    const target = this.rerouteTarget(service, environment);
+    if (rerouteFirst) {
+      if (!target) return;
+      this.setEnvToggling(environment.id, true);
+      this.api.switch(service.id, { toLabel: target.label }).subscribe({
+        next: () => {
+          this.closeStopProdModal();
+          this.api.stopEnvironment(service.id, environment.label).subscribe({
+            next: () => {
+              this.setEnvToggling(environment.id, false);
+              this.loadData();
+            },
+            error: (err) => {
+              this.setEnvToggling(environment.id, false);
+              this.setGlobalError(`Failed to stop ${environment.label}`, err);
+            },
+          });
+        },
+        error: (err) => {
+          this.setEnvToggling(environment.id, false);
+          this.setGlobalError(`Failed to reroute before stopping ${environment.label}`, err);
+        },
+      });
+      return;
+    }
+    this.closeStopProdModal();
+    this.executeStopEnvironment(service, environment);
+  }
+
+  closeStopProdModal() {
+    this.stopProdModal.set(null);
+  }
+
+  isStopProdModalOpen(service: Service, environment: ServiceEnvironment) {
+    const modal = this.stopProdModal();
+    return modal?.serviceId === service.id && modal.environmentLabel === environment.label;
+  }
+
+  rerouteTarget(service: Service, environment: ServiceEnvironment) {
+    return service.environments.find((candidate) => candidate.id !== environment.id && this.canRouteTraffic(candidate)) ?? null;
+  }
+
+  stopProdMessage(service: Service, environment: ServiceEnvironment) {
+    const target = this.rerouteTarget(service, environment);
+    if (target) {
+      return `Stop active ${this.slotName(environment)} and reroute traffic to ${this.slotName(target)} first?`;
+    }
+    return `Stop active ${this.slotName(environment)}? No running standby slot is available for reroute.`;
+  }
+
+  private executeStopEnvironment(service: Service, environment: ServiceEnvironment) {
     this.setEnvToggling(environment.id, true);
     this.api.stopEnvironment(service.id, environment.label).subscribe({
       next: () => {
         this.setEnvToggling(environment.id, false);
+        this.closeStopProdModal();
         this.loadData();
       },
       error: (err) => {
@@ -449,6 +514,9 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   stopTooltip(env: ServiceEnvironment) {
     if (env.containerState !== 'running') {
       return 'Start the container first';
+    }
+    if (env.isActive) {
+      return 'Stopping the active slot requires confirmation';
     }
     return 'Stop container but keep it for later restart';
   }
