@@ -6,6 +6,7 @@ import {
   deleteService,
   deployVersion,
   listServices,
+  removeEnvironment,
   registerService,
   startEnvironment,
   stopEnvironment,
@@ -83,6 +84,13 @@ export const stopEnv = async (req: AuthenticatedRequest, res: Response) => {
   const serviceId = ensureServiceId(req.params.serviceId);
   const label = ensureLabel(req.params.label);
   const service = await stopEnvironment({ serviceId, environmentLabel: label }, req.user!);
+  res.json(service);
+};
+
+export const removeEnv = async (req: AuthenticatedRequest, res: Response) => {
+  const serviceId = ensureServiceId(req.params.serviceId);
+  const label = ensureLabel(req.params.label);
+  const service = await removeEnvironment({ serviceId, environmentLabel: label }, req.user!);
   res.json(service);
 };
 

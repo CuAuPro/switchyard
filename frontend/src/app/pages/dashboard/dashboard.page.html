@@ -340,20 +340,31 @@
                           placeholder="FEATURE_X=true&#10;LOG_LEVEL=debug"
                         ></textarea>
                       </label>
-                      <button
-                        type="submit"
-                        [disabled]="
-                          !isOperator() || !canEdit(env) || envForms.get(env.id)?.invalid || isEnvSaving(env.id)
-                        "
-                      >
-                        {{
-                          isEnvSaving(env.id)
-                            ? 'Saving…'
-                            : canEdit(env)
-                              ? 'Save config'
-                              : 'Stop to edit'
-                        }}
-                      </button>
+                      <div class="env-config-footer">
+                        <button
+                          type="submit"
+                          [disabled]="
+                            !isOperator() || !canEdit(env) || envForms.get(env.id)?.invalid || isEnvSaving(env.id)
+                          "
+                        >
+                          {{
+                            isEnvSaving(env.id)
+                              ? 'Saving…'
+                              : canEdit(env)
+                                ? 'Save config'
+                                : 'Stop to edit'
+                          }}
+                        </button>
+                        <button
+                          type="button"
+                          class="ghost danger"
+                          (click)="removeEnvironment(service, env)"
+                          [disabled]="!canRemove(env) || isEnvToggling(env.id) || !isOperator()"
+                          [title]="removeTooltip(env)"
+                        >
+                          {{ isEnvToggling(env.id) && canRemove(env) ? 'Removing…' : 'Remove' }}
+                        </button>
+                      </div>
                     </form>
                   </section>
                 }

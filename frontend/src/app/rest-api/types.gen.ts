@@ -394,3 +394,22 @@ export type PostApiServicesByServiceIdEnvironmentsByLabelStopResponses = {
 };
 
 export type PostApiServicesByServiceIdEnvironmentsByLabelStopResponse = PostApiServicesByServiceIdEnvironmentsByLabelStopResponses[keyof PostApiServicesByServiceIdEnvironmentsByLabelStopResponses];
+
+export type DeleteApiServicesByServiceIdEnvironmentsByLabelData = {
+    body?: never;
+    path: {
+        serviceId: string;
+        label: string;
+    };
+    query?: never;
+    url: '/api/services/{serviceId}/environments/{label}';
+};
+
+export type DeleteApiServicesByServiceIdEnvironmentsByLabelResponses = {
+    /**
+     * Service after removing the stopped environment container
+     */
+    200: Service;
+};
+
+export type DeleteApiServicesByServiceIdEnvironmentsByLabelResponse = DeleteApiServicesByServiceIdEnvironmentsByLabelResponses[keyof DeleteApiServicesByServiceIdEnvironmentsByLabelResponses];

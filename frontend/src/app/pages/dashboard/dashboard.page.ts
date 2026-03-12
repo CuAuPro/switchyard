@@ -288,6 +288,21 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  removeEnvironment(service: Service, environment: ServiceEnvironment) {
+    if (!this.isOperator() || !this.canRemove(environment)) return;
+    this.setEnvToggling(environment.id, true);
+    this.api.removeEnvironment(service.id, environment.label).subscribe({
+      next: () => {
+        this.setEnvToggling(environment.id, false);
+        this.loadData();
+      },
+      error: (err) => {
+        this.setEnvToggling(environment.id, false);
+        this.setGlobalError(`Failed to remove ${environment.label}`, err);
+      },
+    });
+  }
+
   updateEnvironment(service: Service, environment: ServiceEnvironment) {
     const form = this.envForms.get(environment.id);
     if (!form?.valid || !this.canEdit(environment)) return;
@@ -409,6 +424,10 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     return env.containerState === 'running';
   }
 
+  canRemove(env: ServiceEnvironment) {
+    return env.containerState === 'stopped';
+  }
+
   canRouteTraffic(env: ServiceEnvironment) {
     return env.containerState === 'running' && !env.isActive;
   }
@@ -431,7 +450,13 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     if (env.containerState !== 'running') {
       return 'Start the container first';
     }
-    return '';
+    return 'Stop container but keep it for later restart';
+  }
+
+  removeTooltip(env: ServiceEnvironment) {
+    if (!this.isOperator()) return 'Operator role required';
+    if (env.containerState !== 'stopped') return 'Stop container before removing it';
+    return 'Remove stopped container';
   }
 
   serviceEditTooltip(service: Service) {

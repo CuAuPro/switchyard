@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteApiServicesByServiceIdData, DeleteApiServicesByServiceIdResponses, GetApiAuthMeData, GetApiAuthMeResponses, GetApiServicesData, GetApiServicesResponses, GetApiSystemStatsData, GetApiSystemStatsResponses, PatchApiServicesByServiceIdData, PatchApiServicesByServiceIdResponses, PostApiAuthLoginData, PostApiAuthLoginResponses, PostApiServicesByServiceIdDeploymentsData, PostApiServicesByServiceIdDeploymentsResponses, PostApiServicesByServiceIdEnvironmentsByLabelStartData, PostApiServicesByServiceIdEnvironmentsByLabelStartResponses, PostApiServicesByServiceIdEnvironmentsByLabelStopData, PostApiServicesByServiceIdEnvironmentsByLabelStopResponses, PostApiServicesByServiceIdSwitchData, PostApiServicesByServiceIdSwitchResponses, PostApiServicesData, PostApiServicesResponses } from './types.gen';
+import type { DeleteApiServicesByServiceIdData, DeleteApiServicesByServiceIdEnvironmentsByLabelData, DeleteApiServicesByServiceIdEnvironmentsByLabelResponses, DeleteApiServicesByServiceIdResponses, GetApiAuthMeData, GetApiAuthMeResponses, GetApiServicesData, GetApiServicesResponses, GetApiSystemStatsData, GetApiSystemStatsResponses, PatchApiServicesByServiceIdData, PatchApiServicesByServiceIdResponses, PostApiAuthLoginData, PostApiAuthLoginResponses, PostApiServicesByServiceIdDeploymentsData, PostApiServicesByServiceIdDeploymentsResponses, PostApiServicesByServiceIdEnvironmentsByLabelStartData, PostApiServicesByServiceIdEnvironmentsByLabelStartResponses, PostApiServicesByServiceIdEnvironmentsByLabelStopData, PostApiServicesByServiceIdEnvironmentsByLabelStopResponses, PostApiServicesByServiceIdSwitchData, PostApiServicesByServiceIdSwitchResponses, PostApiServicesData, PostApiServicesResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -100,5 +100,11 @@ export const postApiServicesByServiceIdEnvironmentsByLabelStart = <ThrowOnError 
 export const postApiServicesByServiceIdEnvironmentsByLabelStop = <ThrowOnError extends boolean = false>(options: Options<PostApiServicesByServiceIdEnvironmentsByLabelStopData, ThrowOnError>) => (options.client ?? client).post<PostApiServicesByServiceIdEnvironmentsByLabelStopResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/services/{serviceId}/environments/{label}/stop',
+    ...options
+});
+
+export const deleteApiServicesByServiceIdEnvironmentsByLabel = <ThrowOnError extends boolean = false>(options: Options<DeleteApiServicesByServiceIdEnvironmentsByLabelData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiServicesByServiceIdEnvironmentsByLabelResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/services/{serviceId}/environments/{label}',
     ...options
 });

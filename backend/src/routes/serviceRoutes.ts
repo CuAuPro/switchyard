@@ -5,6 +5,7 @@ import {
   getServices,
   patchService,
   postService,
+  removeEnv,
   removeService,
   startEnv,
   stopEnv,
@@ -21,6 +22,7 @@ router.post('/:serviceId/deployments', authenticate, authorize(['admin', 'operat
 router.post('/:serviceId/switch', authenticate, authorize(['admin', 'operator']), switchEnv);
 router.post('/:serviceId/environments/:label/start', authenticate, authorize(['admin', 'operator']), startEnv);
 router.post('/:serviceId/environments/:label/stop', authenticate, authorize(['admin', 'operator']), stopEnv);
+router.delete('/:serviceId/environments/:label', authenticate, authorize(['admin', 'operator']), removeEnv);
 router.delete('/:serviceId', authenticate, authorize(['admin', 'operator']), removeService);
 
 export default router;

@@ -4,9 +4,11 @@ import { from, map, Observable } from 'rxjs';
 import { Service } from '../models/service.model';
 import {
   CreateServiceRequest,
+  DeleteApiServicesByServiceIdEnvironmentsByLabelData,
   PostApiServicesByServiceIdDeploymentsData,
   PostApiServicesByServiceIdSwitchData,
   SystemStats,
+  deleteApiServicesByServiceIdEnvironmentsByLabel,
   UpdateServiceRequest,
   deleteApiServicesByServiceId,
   getApiSystemStats,
@@ -100,6 +102,16 @@ export class ApiService {
     return from(
       postApiServicesByServiceIdEnvironmentsByLabelStop({
         path: { serviceId, label },
+        responseStyle: 'data' as const,
+        throwOnError: true as const,
+      }),
+    ).pipe(map((data) => data as unknown as Service));
+  }
+
+  removeEnvironment(serviceId: string, label: string) {
+    return from(
+      deleteApiServicesByServiceIdEnvironmentsByLabel({
+        path: { serviceId, label } satisfies DeleteApiServicesByServiceIdEnvironmentsByLabelData['path'],
         responseStyle: 'data' as const,
         throwOnError: true as const,
       }),

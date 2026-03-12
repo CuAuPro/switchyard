@@ -270,6 +270,26 @@ registry.registerPath({
 
 registry.registerPath({
   method: 'delete',
+  path: '/api/services/{serviceId}/environments/{label}',
+  tags: ['Environments'],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: EnvironmentLabelParamSchema,
+  },
+  responses: {
+    200: {
+      description: 'Service after removing the stopped environment container',
+      content: {
+        'application/json': {
+          schema: ServiceSchema,
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'delete',
   path: '/api/services/{serviceId}',
   tags: ['Services'],
   security: [{ bearerAuth: [] }],

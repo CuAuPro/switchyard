@@ -840,7 +840,6 @@ export const stopEnvironment = async (input: EnvironmentToggleInput, actor: Acto
 
   const containerName = parsed.containerName ?? buildContainerName(service.name, environment.label);
   await stopDockerContainer(containerName).catch(() => undefined);
-  await removeDockerContainer(containerName).catch(() => undefined);
 
   await prisma.serviceEnvironment.update({
     where: { id: environment.id },
@@ -853,12 +852,45 @@ export const stopEnvironment = async (input: EnvironmentToggleInput, actor: Acto
     environmentId: environment.id,
     actor,
     type: 'environment.stopped',
-    message: `Stopped ${environment.label} slot and removed container ${containerName}`,
+    message: `Stopped ${environment.label} slot and kept container ${containerName}`,
   });
 
   const updated = await reloadServiceOrThrow(service.id);
   eventBus.emitEvent({ type: 'service.updated', payload: updated });
   void safeRegenerateCaddy(`stop ${service.name} (${environment.label})`);
+  return serializeService(updated);
+};
+
+export const removeEnvironment = async (input: EnvironmentToggleInput, actor: ActorUser) => {
+  requireRole(actor.role, ['admin', 'operator']);
+
+  const service = await reloadServiceOrThrow(input.serviceId);
+  const environment = service.environments.find((env) => env.label === input.environmentLabel);
+  if (!environment) throw new HttpError(404, 'Environment not found');
+  const parsed = parseMetadata(environment.metadata);
+  if (parsed.containerState === 'running') {
+    throw new HttpError(400, `Stop ${environment.label} before removing its container`);
+  }
+
+  const containerName = parsed.containerName ?? buildContainerName(service.name, environment.label);
+  await removeDockerContainer(containerName).catch(() => undefined);
+
+  await prisma.serviceEnvironment.update({
+    where: { id: environment.id },
+    data: {
+      metadata: mergeMetadata(environment.metadata, { containerState: 'stopped' as ContainerState }),
+    },
+  });
+  await logActivity({
+    serviceId: service.id,
+    environmentId: environment.id,
+    actor,
+    type: 'environment.removed',
+    message: `Removed stopped container ${containerName} for ${environment.label}`,
+  });
+
+  const updated = await reloadServiceOrThrow(service.id);
+  eventBus.emitEvent({ type: 'service.updated', payload: updated });
   return serializeService(updated);
 };
 
